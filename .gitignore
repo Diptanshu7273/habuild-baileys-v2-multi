@@ -1,0 +1,6 @@
+.env
+node_modules/
+data/
+sessions/
+uploads/
+auth_session/

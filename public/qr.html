@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connect WhatsApp — Habuild</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #f5f2eb; --ink: #1a1a18; --muted: #7a7568; --safe: #2d7a4f; --accent: #2d5a8e; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); font-family:'Montserrat',sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+.card { background:#fff; border-radius:24px; padding:48px; text-align:center; max-width:420px; width:90%; box-shadow:0 12px 40px rgba(0,0,0,0.08); }
+h1 { font-size:22px; margin-bottom:8px; }
+.sub { color:var(--muted); font-size:13px; margin-bottom:32px; }
+#qrImg { width:280px; height:280px; margin:0 auto 24px; border-radius:16px; background:var(--bg); display:flex; align-items:center; justify-content:center; }
+#qrImg img { width:100%; border-radius:12px; }
+.status { font-size:14px; font-weight:600; padding:10px 20px; border-radius:12px; display:inline-block; }
+.status.connected { background:#edf7f2; color:var(--safe); }
+.status.waiting { background:#fefae8; color:#b8860b; }
+.status.error { background:#fdf0ee; color:#c0392b; }
+.steps { text-align:left; margin-top:24px; font-size:12px; color:var(--muted); line-height:1.8; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🌿 Habuild — Connect WhatsApp</h1>
+  <p class="sub">Scan QR code with your spare phone to connect</p>
+  <div id="qrImg"><span style="color:var(--muted);font-size:14px;">Loading...</span></div>
+  <div id="statusBadge" class="status waiting">Checking connection...</div>
+  <div class="steps">
+    <strong>Steps:</strong><br>
+    1. Open WhatsApp on your spare phone<br>
+    2. Go to Settings → Linked Devices<br>
+    3. Tap "Link a Device"<br>
+    4. Scan the QR code above
+  </div>
+</div>
+<script>
+async function checkStatus() {
+  try {
+    const res = await fetch('/api/qr');
+    const data = await res.json();
+    const badge = document.getElementById('statusBadge');
+    const qrDiv = document.getElementById('qrImg');
+
+    if (data.status === 'connected') {
+      badge.className = 'status connected';
+      badge.textContent = '✅ Connected! Redirecting to dashboard...';
+      qrDiv.innerHTML = '<span style="font-size:64px;">✅</span>';
+      setTimeout(() => window.location.href = '/', 2000);
+    } else if (data.qr) {
+      badge.className = 'status waiting';
+      badge.textContent = '📱 Waiting for QR scan...';
+      qrDiv.innerHTML = `<img src="${data.qr}" alt="QR Code" />`;
+    } else if (data.status === 'connecting') {
+      badge.className = 'status waiting';
+      badge.textContent = '⏳ Connecting to WhatsApp...';
+    } else if (data.status === 'logged_out') {
+      badge.className = 'status error';
+      badge.textContent = '❌ Logged out — delete auth_session/ and restart server';
+    } else {
+      badge.className = 'status waiting';
+      badge.textContent = '⏳ Waiting for connection...';
+    }
+  } catch (err) {
+    document.getElementById('statusBadge').className = 'status error';
+    document.getElementById('statusBadge').textContent = '❌ Cannot reach server';
+  }
+}
+checkStatus();
+setInterval(checkStatus, 3000);
+</script>
+</body>
+</html>

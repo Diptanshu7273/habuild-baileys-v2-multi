@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phone Manager — Habuild</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f2eb;--surface:#fff;--surface2:#ede9df;--border:#d8d2c4;--ink:#1a1a18;--muted:#7a7568;--danger:#c0392b;--danger-bg:#fdf0ee;--safe:#2d7a4f;--safe-bg:#edf7f2;--accent:#2d5a8e;--accent-bg:#eef3fa;--warn:#b8860b;--warn-bg:#fefae8}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'Montserrat',sans-serif;min-height:100vh}
+header{position:sticky;top:0;z-index:50;background:rgba(245,242,235,0.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 48px;display:flex;align-items:center;justify-content:space-between;height:68px}
+.back-btn{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink);font-weight:600;font-size:14px;padding:8px 16px;border-radius:10px;border:1px solid var(--border);transition:all .2s}
+.back-btn:hover{border-color:var(--ink);background:var(--surface)}
+main{max-width:1100px;margin:0 auto;padding:32px 48px}
+h1{font-size:24px;font-weight:700;margin-bottom:8px}
+.subtitle{font-size:14px;color:var(--muted);margin-bottom:28px}
+
+.stats-bar{display:flex;gap:20px;margin-bottom:28px;flex-wrap:wrap}
+.mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:10px}
+.mini-stat .num{font-size:24px;font-weight:800;letter-spacing:-1px}
+.mini-stat .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+
+.add-bar{display:flex;gap:12px;margin-bottom:28px;align-items:center;flex-wrap:wrap}
+.add-bar input{padding:10px 16px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:'Montserrat',sans-serif;outline:none;width:250px}
+.add-bar input:focus{border-color:var(--accent)}
+.btn{padding:10px 20px;border-radius:10px;font-size:13px;font-family:'Montserrat',sans-serif;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-dark{background:var(--ink);color:#fff} .btn-dark:hover{opacity:.85}
+.btn-danger{background:var(--danger);color:#fff} .btn-danger:hover{opacity:.85}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--ink)} .btn-outline:hover{border-color:var(--ink)}
+.btn-sm{padding:6px 14px;font-size:12px}
+
+.phone-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.phone-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;position:relative;overflow:hidden;transition:all .2s}
+.phone-card:hover{box-shadow:0 8px 24px rgba(0,0,0,0.06);transform:translateY(-2px)}
+.phone-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:16px 0 0 16px}
+.phone-card.s-connected::before{background:var(--safe)} .phone-card.s-qr_pending::before{background:var(--warn)} .phone-card.s-disconnected::before,.phone-card.s-reconnecting::before,.phone-card.s-connecting::before{background:var(--muted)} .phone-card.s-logged_out::before,.phone-card.s-error::before{background:var(--danger)}
+.phone-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.phone-name{font-size:16px;font-weight:700}
+.phone-number{font-size:13px;color:var(--muted);margin-top:2px}
+.status-badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.sb-connected{background:var(--safe-bg);color:var(--safe)} .sb-qr_pending{background:var(--warn-bg);color:var(--warn)} .sb-disconnected,.sb-reconnecting,.sb-connecting{background:var(--surface2);color:var(--muted)} .sb-logged_out,.sb-error{background:var(--danger-bg);color:var(--danger)}
+.phone-stats{display:flex;gap:16px;margin-bottom:14px;font-size:12px;color:var(--muted)}
+.phone-stats strong{color:var(--ink)}
+.phone-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* QR display area */
+.qr-area{margin:14px 0;text-align:center;padding:16px;background:var(--bg);border-radius:12px}
+.qr-area canvas{max-width:220px!important;height:auto!important}
+.qr-area p{font-size:11px;color:var(--muted);margin-top:8px}
+
+.empty{text-align:center;padding:60px;color:var(--muted)}
+.empty-icon{font-size:48px;margin-bottom:14px}
+.empty h3{font-size:20px;color:var(--ink);margin-bottom:8px}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="dashboard.html" class="back-btn">← Back to Dashboard</a>
+  <div style="font-size:16px;font-weight:700;">📱 Phone Manager</div>
+  <div style="width:150px"></div>
+</header>
+
+<main>
+  <h1>Manage WhatsApp Phones</h1>
+  <p class="subtitle">Connect your 21 admin phones — each gets its own QR code and session. Cost: $0/month.</p>
+
+  <div class="stats-bar">
+    <div class="mini-stat"><div><div class="num" id="sConnected" style="color:var(--safe)">0</div><div class="label">Connected</div></div></div>
+    <div class="mini-stat"><div><div class="num" id="sPending" style="color:var(--warn)">0</div><div class="label">Awaiting QR</div></div></div>
+    <div class="mini-stat"><div><div class="num" id="sTotal">0</div><div class="label">Total Phones</div></div></div>
+    <div class="mini-stat"><div><div class="num" id="sGroups" style="color:var(--accent)">0</div><div class="label">Total Groups</div></div></div>
+  </div>
+
+  <div class="add-bar">
+    <input type="text" id="phoneName" placeholder="Phone label (e.g., phone_1, admin_mumbai)" />
+    <button class="btn btn-dark" onclick="addPhone()">+ Add Phone</button>
+    <button class="btn btn-outline" onclick="addBulk()">+ Add 21 Phones</button>
+  </div>
+
+  <div class="phone-grid" id="phoneGrid">
+    <div class="empty"><div class="empty-icon">📱</div><h3>No phones added</h3><p>Click "Add Phone" to connect your first WhatsApp number</p></div>
+  </div>
+</main>
+
+<script>
+const serverUrl=localStorage.getItem('yct_server')||'http://localhost:3000';
+
+async function addPhone(){
+  const input=document.getElementById('phoneName');
+  const name=input.value.trim();
+  if(!name){input.style.borderColor='var(--danger)';input.placeholder='⚠️ Type a label first!';input.focus();return;}
+  input.style.borderColor='var(--border)';input.placeholder='Phone label (e.g., phone_1, admin_mumbai)';
+  try{
+    const res=await fetch(`${serverUrl}/api/sessions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+    const data=await res.json();
+    if(data.success){input.value='';loadSessions();}
+    else{input.style.borderColor='var(--danger)';input.placeholder='Error: '+(data.error||'Try different name');}
+  }catch(e){input.style.borderColor='var(--danger)';input.placeholder='Server error';}
+}
+
+async function addBulk(){
+  if(!confirm('This will create 21 phone sessions (phone_1 to phone_21). Continue?'))return;
+  for(let i=1;i<=21;i++){
+    try{
+      await fetch(`${serverUrl}/api/sessions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:`phone_${i}`})});
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,6000)); // 6s between each to avoid overload
+  }
+  loadSessions();
+}
+
+async function removePhone(id){
+  if(!confirm(`Disconnect ${id}? You'll need to re-scan QR to reconnect.`))return;
+  await fetch(`${serverUrl}/api/sessions/${id}`,{method:'DELETE'});
+  loadSessions();
+}
+
+async function logoutPhone(id){
+  if(!confirm(`Logout ${id}? This removes the saved session. You'll need to scan QR again.`))return;
+  await fetch(`${serverUrl}/api/sessions/${id}/logout`,{method:'POST'});
+  loadSessions();
+}
+
+async function loadSessions(){
+  try{
+    const res=await fetch(`${serverUrl}/api/sessions`);
+    const data=await res.json();
+    const sessions=data.sessions||[];
+
+    // Stats
+    document.getElementById('sConnected').textContent=sessions.filter(s=>s.status==='connected').length;
+    document.getElementById('sPending').textContent=sessions.filter(s=>s.status==='qr_pending').length;
+    document.getElementById('sTotal').textContent=sessions.length;
+    document.getElementById('sGroups').textContent=sessions.reduce((a,s)=>a+(s.groupCount||0),0);
+
+    const grid=document.getElementById('phoneGrid');
+    if(!sessions.length){
+      grid.innerHTML='<div class="empty"><div class="empty-icon">📱</div><h3>No phones added</h3><p>Click "Add Phone" to connect your first WhatsApp number</p></div>';
+      return;
+    }
+
+    grid.innerHTML=sessions.map(s=>{
+      const statusLabel={'connected':'✅ Connected','qr_pending':'📱 Scan QR','connecting':'⏳ Connecting','reconnecting':'🔄 Reconnecting','disconnected':'⚫ Disconnected','logged_out':'❌ Logged Out','error':'❌ Error'}[s.status]||s.status;
+      const badgeCls='sb-'+s.status;
+
+      return `<div class="phone-card s-${s.status}" id="card-${s.id}">
+        <div class="phone-header">
+          <div>
+            <div class="phone-name" id="name-${s.id}">${s.phoneName||s.id} <span style="font-size:12px;color:var(--accent);cursor:pointer;font-weight:400;" onclick="renamePhone('${s.id}','${(s.phoneName||s.id).replace(/'/g,"\\'")}')">✏️</span></div>
+            <div class="phone-number">${s.phoneNumber?'+'+s.phoneNumber:'Not connected'}</div>
+          </div>
+          <span class="status-badge ${badgeCls}">${statusLabel}</span>
+        </div>
+        <div class="phone-stats">
+          <span>Groups: <strong>${s.groupCount||0}</strong></span>
+          <span>ID: <strong>${s.id}</strong></span>
+        </div>
+        ${s.status==='qr_pending'?`<div class="qr-area" id="qr-${s.id}"><img src="${serverUrl}/api/sessions/${s.id}/qr.png?t=${Date.now()}" style="max-width:240px;border-radius:8px;" onerror="this.parentElement.innerHTML='<p>⏳ QR loading... wait a moment</p>'" /><p>Scan with WhatsApp → Linked Devices</p></div>`:''}
+        <div class="phone-actions">
+          ${s.status==='qr_pending'||s.status==='connected'?`<button class="btn btn-outline btn-sm" onclick="removePhone('${s.id}')">Disconnect</button>`:''}
+          ${s.status==='connected'?`<button class="btn btn-danger btn-sm" onclick="logoutPhone('${s.id}')">Logout</button>`:''}
+          ${s.status==='logged_out'||s.status==='error'?`<button class="btn btn-dark btn-sm" onclick="reconnectPhone('${s.id}')">Reconnect</button>`:''}
+          ${s.status!=='connected'&&s.status!=='qr_pending'?`<button class="btn btn-danger btn-sm" onclick="removePhone('${s.id}')">Remove</button>`:''}
+        </div>
+      </div>`;
+    }).join('');
+
+    // QR codes now rendered as server-side PNG images - no JS loading needed
+  }catch(e){
+    document.getElementById('phoneGrid').innerHTML='<div class="empty"><div class="empty-icon">❌</div><h3>Cannot connect to server</h3><p>Make sure server is running at '+serverUrl+'</p></div>';
+  }
+}
+
+async function reconnectPhone(id){
+  await fetch(`${serverUrl}/api/sessions/${id}`,{method:'DELETE'});
+  await new Promise(r=>setTimeout(r,1000));
+  await fetch(`${serverUrl}/api/sessions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:id})});
+  loadSessions();
+}
+
+async function renamePhone(id,currentName){
+  const newName=prompt('Rename phone:',currentName);
+  if(!newName||newName.trim()===currentName)return;
+  try{
+    const res=await fetch(`${serverUrl}/api/sessions/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:newName.trim()})});
+    const data=await res.json();
+    if(data.success){loadSessions();}
+  }catch(e){}
+}
+
+// Refresh every 5 seconds — but skip grid reload if user is typing
+setInterval(()=>{
+  const input=document.getElementById('phoneName');
+  if(document.activeElement===input) return; // don't refresh while typing
+  loadSessions();
+},5000);
+loadSessions();
+</script>
+</body>
+</html>

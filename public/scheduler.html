@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schedule Messages — Habuild</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f2eb;--surface:#fff;--surface2:#ede9df;--border:#d8d2c4;--ink:#1a1a18;--muted:#7a7568;--danger:#c0392b;--safe:#2d7a4f;--accent:#2d5a8e;--accent-bg:#eef3fa}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'Montserrat',sans-serif;min-height:100vh}
+header{position:sticky;top:0;z-index:50;background:rgba(245,242,235,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 48px;display:flex;align-items:center;justify-content:space-between;height:68px}
+.back-btn{background:var(--ink);color:#fff;border:none;padding:8px 16px;border-radius:10px;font-size:13px;cursor:pointer;font-family:'Montserrat',sans-serif}
+h1{font-size:18px;font-weight:700}
+main{max-width:900px;margin:0 auto;padding:32px 48px}
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:32px;margin-bottom:28px}
+.form-card h2{font-size:18px;font-weight:700;margin-bottom:20px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:6px;font-weight:600}
+.field select,.field input,.field textarea{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-family:'Montserrat',sans-serif;color:var(--ink);background:var(--surface);outline:none}
+.field textarea{min-height:100px;resize:vertical}
+.field select:focus,.field input:focus,.field textarea:focus{border-color:var(--accent)}
+.row{display:flex;gap:16px}.row>*{flex:1}
+.btn{padding:10px 20px;border-radius:10px;font-size:14px;font-family:'Montserrat',sans-serif;font-weight:600;cursor:pointer;border:none;transition:all 0.2s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{opacity:0.85}
+.btn-green{background:var(--safe);color:#fff}.btn-green:hover{opacity:0.85}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--ink)}.btn-outline:hover{border-color:var(--ink)}
+.btn-row{display:flex;gap:12px;margin-top:8px}
+.drop-zone{border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;transition:all 0.2s}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);background:var(--accent-bg)}
+.drop-zone .icon{font-size:28px;margin-bottom:8px}
+#fileName{margin-top:8px;font-size:12px;color:var(--safe);font-weight:600}
+.schedule-list{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+.schedule-list h2{padding:20px 28px;font-size:16px;font-weight:700;border-bottom:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.7px;color:var(--muted);padding:10px 20px;border-bottom:1px solid var(--border);background:var(--bg)}
+td{padding:12px 20px;font-size:12px;border-bottom:1px solid var(--surface2)}
+.status-badge{font-size:11px;padding:3px 10px;border-radius:8px;font-weight:600}
+.s-pending{background:#fefae8;color:#b8860b}.s-sending{background:var(--accent-bg);color:var(--accent)}.s-sent{background:var(--safe-bg);color:var(--safe)}.s-failed{background:#fdf0ee;color:var(--danger)}.s-cancelled{background:var(--surface2);color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="window.location.href='dashboard.html'">← Back to Dashboard</button>
+  <h1>📅 Schedule Messages</h1>
+  <div></div>
+</header>
+<main>
+  <div class="form-card">
+    <h2>New Message</h2>
+    <div class="field"><label>Message Type</label>
+      <select id="msgType" onchange="toggleFileUpload()"><option value="text">Text Only</option><option value="image">Image + Caption</option><option value="video">Video + Caption</option><option value="document">Document (PDF etc)</option></select>
+    </div>
+    <div class="field"><label>Message Text / Caption</label><textarea id="msgText" placeholder="Enter your message..."></textarea></div>
+    <div class="field" id="fileField" style="display:none"><label>Upload File</label>
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <div class="icon">📁</div>Drop file here or click to browse
+      </div>
+      <input type="file" id="fileInput" style="display:none" onchange="handleFile(this)" />
+      <div id="fileName"></div>
+    </div>
+    <div class="field"><label>Send To</label>
+      <select id="targetGroup"><option value="all">All Communities</option></select>
+    </div>
+    <div class="row">
+      <div class="field"><label>Schedule Date & Time (IST)</label><input type="datetime-local" id="sendAt" /></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="scheduleMsg()">📅 Schedule</button>
+      <button class="btn btn-green" onclick="sendNow()">⚡ Send Now</button>
+    </div>
+  </div>
+  <div class="schedule-list">
+    <h2>Scheduled Messages</h2>
+    <table><thead><tr><th>Type</th><th>Message</th><th>Target</th><th>Scheduled</th><th>Status</th><th>Action</th></tr></thead><tbody id="schedBody"></tbody></table>
+    <div id="schedEmpty" style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">No scheduled messages yet.</div>
+  </div>
+</main>
+<script>
+const serverUrl=localStorage.getItem('yct_server')||'http://localhost:3000';
+let selectedFile=null;
+
+function toggleFileUpload(){document.getElementById('fileField').style.display=document.getElementById('msgType').value==='text'?'none':'block';}
+function handleFile(input){if(input.files[0]){selectedFile=input.files[0];document.getElementById('fileName').textContent='📎 '+selectedFile.name;}}
+
+// Drag & drop
+const dz=document.getElementById('dropZone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');if(e.dataTransfer.files[0]){selectedFile=e.dataTransfer.files[0];document.getElementById('fileName').textContent='📎 '+selectedFile.name;}});
+
+async function loadGroups(){
+  try{const res=await fetch(`${serverUrl}/api/communities`);const data=await res.json();const sel=document.getElementById('targetGroup');
+  (data.communities||[]).forEach(c=>{const opt=document.createElement('option');opt.value=c.id;opt.textContent=`${c.name} (${c.count})`;sel.appendChild(opt);});
+  }catch(e){}
+}
+
+async function sendSchedule(sendAt){
+  const fd=new FormData();
+  fd.append('type',document.getElementById('msgType').value);
+  fd.append('text',document.getElementById('msgText').value);
+  fd.append('groupId',document.getElementById('targetGroup').value);
+  if(sendAt)fd.append('sendAt',sendAt);
+  if(selectedFile)fd.append('file',selectedFile);
+  try{
+    const res=await fetch(`${serverUrl}/api/schedule`,{method:'POST',body:fd});
+    const data=await res.json();
+    if(data.success){document.getElementById('msgText').value='';selectedFile=null;document.getElementById('fileName').textContent='';loadScheduled();}
+  }catch(e){alert('Error: '+e.message);}
+}
+
+function scheduleMsg(){
+  const sendAt=document.getElementById('sendAt').value;
+  if(!sendAt){alert('Pick a date & time');return;}
+  sendSchedule(new Date(sendAt).toISOString());
+}
+function sendNow(){if(!confirm('Send now to all selected groups?'))return;sendSchedule(null);}
+
+async function loadScheduled(){
+  try{
+    const res=await fetch(`${serverUrl}/api/scheduled`);const data=await res.json();
+    const msgs=data.messages||[];
+    const tbody=document.getElementById('schedBody'),empty=document.getElementById('schedEmpty');
+    if(!msgs.length){tbody.innerHTML='';empty.style.display='block';return;}
+    empty.style.display='none';
+    tbody.innerHTML=msgs.slice().reverse().map(m=>{
+      const statusCls='s-'+m.status;
+      const cancel=m.status==='pending'?`<button class="btn-outline" style="font-size:11px;padding:4px 10px;border-radius:8px;cursor:pointer;" onclick="cancelMsg('${m.id}')">Cancel</button>`:'—';
+      const target=m.groupId==='all'?'All Groups':'1 Group';
+      const sched=m.sendAt?new Date(m.sendAt).toLocaleString('en-IN'):'Immediate';
+      return`<tr><td>${m.type}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.text||'(file only)'}</td><td>${target}</td><td>${sched}</td><td><span class="status-badge ${statusCls}">${m.status}</span></td><td>${cancel}</td></tr>`;
+    }).join('');
+  }catch(e){}
+}
+
+async function cancelMsg(id){
+  try{await fetch(`${serverUrl}/api/schedule/${id}`,{method:'DELETE'});loadScheduled();}catch(e){}
+}
+
+loadGroups();
+loadScheduled();
+setInterval(loadScheduled,10000);
+</script>
+</body>
+</html>

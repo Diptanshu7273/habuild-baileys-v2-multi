@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Members — Habuild</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f2eb;--surface:#fff;--surface2:#ede9df;--border:#d8d2c4;--ink:#1a1a18;--muted:#7a7568;--danger:#c0392b;--danger-bg:#fdf0ee;--safe:#2d7a4f;--safe-bg:#edf7f2;--accent:#2d5a8e;--accent-bg:#eef3fa}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'Montserrat',sans-serif;min-height:100vh}
+header{position:sticky;top:0;z-index:50;background:rgba(245,242,235,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 48px;display:flex;align-items:center;justify-content:space-between;height:68px}
+.back-btn{background:var(--ink);color:#fff;border:none;padding:8px 16px;border-radius:10px;font-size:13px;cursor:pointer;font-family:'Montserrat',sans-serif}
+.back-btn:hover{opacity:0.85}
+h1{font-size:18px;font-weight:700}
+#groupName{color:var(--accent)}
+main{max-width:1200px;margin:0 auto;padding:32px 48px}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:8px}
+.stat-num{font-size:32px;font-weight:800;letter-spacing:-1px}
+.stat-num.c-accent{color:var(--accent)}.stat-num.c-safe{color:var(--safe)}
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+.toolbar-right{display:flex;gap:10px;align-items:center}
+.btn{padding:8px 16px;border-radius:10px;font-size:13px;font-family:'Montserrat',sans-serif;font-weight:500;cursor:pointer;border:none;transition:all 0.2s}
+.btn-dark{background:var(--ink);color:#fff}.btn-dark:hover{opacity:0.85}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--ink)}.btn-outline:hover{border-color:var(--ink)}
+.btn-green{background:var(--safe);color:#fff}.btn-green:hover{opacity:0.85}
+.btn-danger{background:var(--danger);color:#fff;font-size:11px;padding:5px 12px;border-radius:8px;border:none;cursor:pointer;font-family:'Montserrat',sans-serif}
+.btn-danger:hover{opacity:0.85}
+.btn-protected{background:var(--safe-bg);color:var(--safe);font-size:11px;padding:5px 12px;border-radius:8px;border:none;font-family:'Montserrat',sans-serif}
+.filters{display:flex;gap:8px;margin-bottom:16px}
+.filter-btn{padding:6px 16px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Montserrat',sans-serif;transition:all 0.2s}
+.filter-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.search-box{width:100%;margin-bottom:16px;position:relative}
+.search-box input{width:100%;padding:10px 16px 10px 40px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--ink);font-family:'Montserrat',sans-serif;outline:none}
+.search-box::before{content:'🔍';position:absolute;left:14px;top:10px;font-size:14px}
+.add-bar{display:none;background:var(--accent-bg);border:1px solid rgba(45,90,142,0.2);border-radius:12px;padding:14px;margin-bottom:16px;gap:10px;align-items:center}
+.add-bar.show{display:flex}
+.add-bar input{flex:1;padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Montserrat',sans-serif;outline:none}
+.add-status{font-size:12px;margin-top:6px;font-weight:500}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.7px;color:var(--muted);padding:12px 20px;border-bottom:1px solid var(--border);background:var(--bg)}
+td{padding:12px 20px;font-size:13px;border-bottom:1px solid var(--surface2)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg)}
+.role-badge{font-size:11px;padding:3px 10px;border-radius:8px;font-weight:600}
+.role-admin{background:var(--accent-bg);color:var(--accent)}.role-member{background:var(--surface2);color:var(--muted)}
+#toasts{position:fixed;top:80px;right:24px;z-index:200;display:flex;flex-direction:column;gap:10px}
+.toast{padding:12px 16px;border-radius:10px;font-size:13px;max-width:300px;box-shadow:0 8px 24px rgba(0,0,0,0.12);animation:toastIn 0.3s ease}
+@keyframes toastIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+.toast-success{background:#fff;border-left:4px solid var(--safe)}.toast-danger{background:#fff;border-left:4px solid var(--danger)}.toast-info{background:#fff;border-left:4px solid var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="window.location.href='dashboard.html'">← Back to Dashboard</button>
+  <h1><span id="groupName">Loading...</span></h1>
+  <div style="font-size:12px;color:var(--muted);" id="totalLabel">—</div>
+</header>
+<div id="toasts"></div>
+<main>
+  <div class="stats-row">
+    <div class="stat"><div class="stat-label">Total Members</div><div class="stat-num c-accent" id="statTotal">—</div></div>
+    <div class="stat"><div class="stat-label">🛡️ Admins</div><div class="stat-num c-safe" id="statAdmins">—</div></div>
+    <div class="stat"><div class="stat-label">👤 Members</div><div class="stat-num c-accent" id="statMembers">—</div></div>
+  </div>
+  <div class="toolbar">
+    <div class="filters">
+      <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('admin',this)">🛡️ Community Admin</button>
+      <button class="filter-btn" onclick="setFilter('member',this)">👤 Members</button>
+    </div>
+    <div class="toolbar-right">
+      <button class="btn btn-green" onclick="toggleAddBar()">+ Add Member</button>
+      <button class="btn btn-outline" onclick="exportCSV()">⬇ CSV</button>
+    </div>
+  </div>
+  <div class="add-bar" id="addBar">
+    <input type="tel" id="addNumber" placeholder="Phone with country code (e.g., 919876543210)" />
+    <button class="btn btn-green" onclick="addMember()">Add to Group</button>
+    <div class="add-status" id="addStatus"></div>
+  </div>
+  <div class="search-box"><input type="text" id="searchInput" placeholder="Search by phone number..." oninput="renderTable()" /></div>
+  <table><thead><tr><th>#</th><th>Phone Number</th><th>Role</th><th>Action</th></tr></thead><tbody id="memberBody"></tbody></table>
+</main>
+<script>
+const serverUrl=localStorage.getItem('yct_server')||'http://localhost:3000';
+const params=new URLSearchParams(window.location.search);
+const groupId=params.get('id');
+let allMembers=[],activeFilter='all';
+
+async function loadMembers(){
+  if(!groupId){document.getElementById('groupName').textContent='No group selected';return;}
+  try{
+    const res=await fetch(`${serverUrl}/api/group/${encodeURIComponent(groupId)}/members`);
+    const data=await res.json();
+    document.getElementById('groupName').textContent=data.groupName||'Unknown';
+    document.getElementById('totalLabel').textContent=`${data.totalMembers||0} members`;
+    allMembers=(data.members||[]).map(m=>({
+      ...m,
+      isAdmin: m.role==='admin',
+    }));
+    const adminCount=allMembers.filter(m=>m.isAdmin).length;
+    document.getElementById('statTotal').textContent=allMembers.length;
+    document.getElementById('statAdmins').textContent=adminCount;
+    document.getElementById('statMembers').textContent=allMembers.length-adminCount;
+    renderTable();
+  }catch(err){document.getElementById('groupName').textContent='Error loading';toast('Failed to load members','danger');}
+}
+
+function renderTable(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  let list=allMembers.filter(m=>{
+    if(q&&!m.number.includes(q))return false;
+    if(activeFilter==='admin')return m.isAdmin;
+    if(activeFilter==='member')return!m.isAdmin;
+    return true;
+  });
+  const tbody=document.getElementById('memberBody');
+  tbody.innerHTML=list.map((m,i)=>{
+    const roleClass=m.isAdmin?'role-admin':'role-member';
+    const roleLabel=m.isAdmin?'🛡️ Community Admin':'👤 Member';
+    const displayNum=m.displayNumber||m.number;
+    const lidTag=m.isLid?'<span style="font-size:10px;background:#eef3fa;color:#2d5a8e;padding:2px 6px;border-radius:4px;margin-left:6px;">LID</span>':'';
+    const action=m.isAdmin?`<span class="btn-protected">Protected</span>`:`<button class="btn-danger" onclick="removeMember('${m.number}')">Remove</button>`;
+    return`<tr><td>${i+1}</td><td>+${displayNum}${lidTag}</td><td><span class="role-badge ${roleClass}">${roleLabel}</span></td><td>${action}</td></tr>`;
+  }).join('');
+}
+
+function setFilter(f,btn){activeFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTable();}
+function toggleAddBar(){document.getElementById('addBar').classList.toggle('show');document.getElementById('addStatus').textContent='';}
+
+async function addMember(){
+  const num=document.getElementById('addNumber').value.trim();
+  if(!num){toast('Enter a phone number','danger');return;}
+  const status=document.getElementById('addStatus');
+  status.textContent='Adding...';status.style.color='var(--accent)';
+  try{
+    const res=await fetch(`${serverUrl}/api/group/${encodeURIComponent(groupId)}/members`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({number:num})});
+    const data=await res.json();
+    if(data.success){status.textContent='✅ Added!';status.style.color='var(--safe)';document.getElementById('addNumber').value='';loadMembers();}
+    else{status.textContent='❌ '+(data.error||'Failed');status.style.color='var(--danger)';}
+  }catch(err){status.textContent='❌ Error';status.style.color='var(--danger)';}
+}
+
+async function removeMember(number){
+  if(!confirm(`Remove +${number} from this group?`))return;
+  try{
+    const res=await fetch(`${serverUrl}/api/group/${encodeURIComponent(groupId)}/members/${number}`,{method:'DELETE'});
+    const data=await res.json();
+    if(data.success){toast('Member removed','success');loadMembers();}
+    else toast('Failed: '+(data.error||'Unknown error'),'danger');
+  }catch(err){toast('Error removing member','danger');}
+}
+
+function exportCSV(){
+  const rows=[['#','Phone Number','Role']];
+  allMembers.forEach((m,i)=>rows.push([i+1,'+'+(m.displayNumber||m.number),m.isAdmin?'Admin':'Member']));
+  const csv=rows.map(r=>r.map(x=>`"${x}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=`members-${groupId.substring(0,10)}-${new Date().toISOString().slice(0,10)}.csv`;a.click();toast('CSV exported!','success');
+}
+
+function toast(msg,type='info'){const el=document.createElement('div');el.className=`toast toast-${type}`;el.textContent=msg;document.getElementById('toasts').appendChild(el);setTimeout(()=>el.remove(),3000);}
+loadMembers();
+</script>
+</body>
+</html>
