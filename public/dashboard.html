@@ -149,7 +149,7 @@ tr:hover td{background:var(--bg)}
     <div class="stat"><div class="stat-label">🟢 Safe</div><div class="stat-num c-safe" id="sSafe">—</div><div class="stat-desc">Under 1600</div></div>
     <div class="stat"><div class="stat-label">Total Members</div><div class="stat-num c-accent" id="sMembers">—</div><div class="stat-desc">Across all groups</div></div>
   </div>
-  <div class="toolbar"><h2>Communities</h2><div class="toolbar-right"><button class="btn btn-dark" onclick="window.location.href='phones.html'" style="background:#25D366;">📱 Manage Phones</button><button class="btn btn-dark" onclick="window.location.href='scheduler.html'" style="background:#2d5a8e;">📅 Schedule Messages</button><button class="btn btn-outline" onclick="exportCSV()">⬇ Export CSV</button></div></div>
+  <div class="toolbar"><h2>Communities</h2><div class="toolbar-right"><button class="btn btn-dark" onclick="window.location.href='phones.html'" style="background:#25D366;">📱 Manage Phones</button><button class="btn btn-dark" onclick="window.location.href='scheduler.html'" style="background:#2d5a8e;">📅 Schedule Messages</button><button class="btn btn-dark" onclick="downloadExcel()" style="background:#217346;">📊 Export Excel</button><button class="btn btn-outline" onclick="exportCSV()">⬇ CSV</button></div></div>
   <div class="filters">
     <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
     <button class="filter-btn" onclick="setFilter('danger',this)">🔴 Need New Link</button>
@@ -329,6 +329,10 @@ function exportCSV(){
   allCommunities.forEach(c=>rows.push([c.name,c.count,MAX-c.count,((c.count/MAX)*100).toFixed(1)+'%',getBadgeLabel(c.count),c.updatedAt||'']));
   const csv=rows.map(r=>r.map(x=>`"${x}"`).join(',')).join('\n');
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=`habuild-communities-${new Date().toISOString().slice(0,10)}.csv`;a.click();toast('CSV exported!','success');
+}
+function downloadExcel(){
+  toast('Generating Excel...','info');
+  window.location.href=`${serverUrl}/api/export-excel`;
 }
 function toast(msg,type='info'){const icons={danger:'🚨',warn:'⚠️',success:'✅',info:'ℹ️'};const el=document.createElement('div');el.className=`toast toast-${type}`;el.innerHTML=`<span>${icons[type]}</span><span>${msg}</span>`;document.getElementById('toasts').appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity 0.3s';},4000);setTimeout(()=>el.remove(),4400);}
 setInterval(fetchData,30000);
