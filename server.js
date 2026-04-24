@@ -78,6 +78,49 @@ loadScheduled();
 
 const sessions = {};
 
+// ── STALE DATA CLEANUP ─────────────────────────────────────────────
+function cleanupStaleData() {
+  const activeSessionIds = new Set(Object.keys(sessions));
+
+  // If no sessions at all, clear all old saved phones + communities
+  if (activeSessionIds.size === 0) {
+    const oldPhoneCount = Object.keys(db.phones || {}).length;
+    const oldCommunityCount = Object.keys(db.communities || {}).length;
+
+    if (oldPhoneCount || oldCommunityCount) {
+      console.log(`🧹 Clearing stale data: ${oldPhoneCount} phones, ${oldCommunityCount} communities`);
+      db.phones = {};
+      db.communities = {};
+      saveData();
+    }
+    return;
+  }
+
+  // Remove only stale phone-linked communities
+  let removedCommunities = 0;
+  let removedPhones = 0;
+
+  for (const cid of Object.keys(db.communities || {})) {
+    const c = db.communities[cid];
+    if (c.phoneId && !activeSessionIds.has(c.phoneId)) {
+      delete db.communities[cid];
+      removedCommunities++;
+    }
+  }
+
+  for (const pid of Object.keys(db.phones || {})) {
+    if (!activeSessionIds.has(pid)) {
+      delete db.phones[pid];
+      removedPhones++;
+    }
+  }
+
+  if (removedCommunities || removedPhones) {
+    console.log(`🧹 Removed stale data → phones: ${removedPhones}, communities: ${removedCommunities}`);
+    saveData();
+  }
+}
+
 async function createSession(sessionId) {
   if (sessions[sessionId]?.sock) {
     console.log(`⚠️ Session ${sessionId} exists`);
@@ -140,7 +183,6 @@ async function createSession(sessionId) {
           addHistory(event.id, metadata.subject, count, change, `${action}: ${nums.join(', ')}`);
           saveData();
 
-          // Important: this now only alerts once on startup, then only on join/increase
           await checkAlerts(event.id, metadata.subject, count, sessionId);
         }
       } catch (e) {}
@@ -257,7 +299,6 @@ async function syncSessionGroups(sessionId) {
       const ex = db.communities[g.id];
       const old = ex?.count || 0;
 
-      // Preserve alert state + save phoneName
       db.communities[g.id] = {
         ...(ex || {}),
         id: g.id,
@@ -281,9 +322,7 @@ async function syncSessionGroups(sessionId) {
         addHistory(g.id, g.subject, count, count - old);
       }
 
-      // Important: this will now send only once on startup, then only on actual increases
       await checkAlerts(g.id, g.subject, count, sessionId);
-
       synced++;
     }
 
@@ -307,7 +346,9 @@ async function syncAllGroups() {
     }
   }
 
+  cleanupStaleData();
   saveData();
+
   console.log(`✅ Total: ${t} communities\n`);
   return { synced: t };
 }
@@ -330,10 +371,6 @@ function getAnyConnectedSession() {
 }
 
 // ── FIXED ALERT LOGIC ─────────────────────────────────────────────
-// - Startup: alert once if already above warn/max
-// - After startup: alert only when count increases (people joined)
-// - No repeated spam on every sync
-// - Reset flags if count drops below thresholds
 async function checkAlerts(gid, name, count, sid) {
   const s = sessions[sid] || getAnyConnectedSession();
   if (!s?.sock) return;
@@ -342,20 +379,14 @@ async function checkAlerts(gid, name, count, sid) {
 
   const community = db.communities[gid];
 
-  // initialize flags if missing
   if (typeof community.warnSent !== 'boolean') community.warnSent = false;
   if (typeof community.fullSent !== 'boolean') community.fullSent = false;
 
-  // first time for this community after startup / first sync
   const isStartupCheck = typeof community.lastCount === 'undefined';
-
-  // if first time, use same count so it doesn't falsely look like a join
   const previousCount = isStartupCheck ? count : Number(community.lastCount || 0);
-
-  // only alert after startup when people actually joined
   const peopleJoined = count > previousCount;
 
-  // ---------------- FULL ALERT ----------------
+  // FULL ALERT
   if (
     count >= CONFIG.MAX_LIMIT &&
     !community.fullSent &&
@@ -379,11 +410,11 @@ async function checkAlerts(gid, name, count, sid) {
     }
 
     community.fullSent = true;
-    community.warnSent = true; // warning already handled too
+    community.warnSent = true;
     console.log(`🚨 FULL alert sent: ${name} (${count})`);
   }
 
-  // ---------------- WARNING ALERT ----------------
+  // WARNING ALERT
   else if (
     count >= CONFIG.WARN_LIMIT &&
     count < CONFIG.MAX_LIMIT &&
@@ -412,25 +443,21 @@ async function checkAlerts(gid, name, count, sid) {
     console.log(`⚠️ WARNING alert sent: ${name} (${count})`);
   }
 
-  // ---------------- RESET FLAGS IF COUNT DROPS ----------------
+  // RESET FLAGS IF COUNT DROPS
   if (count < CONFIG.WARN_LIMIT) {
-    // below warning => reset both
     if (community.warnSent || community.fullSent) {
       console.log(`🔄 Reset alerts for ${name} (below warning)`);
     }
     community.warnSent = false;
     community.fullSent = false;
   } else if (count < CONFIG.MAX_LIMIT) {
-    // still warning zone but no longer full => reset full only
     if (community.fullSent) {
       console.log(`🔄 Reset FULL alert for ${name} (below full)`);
     }
     community.fullSent = false;
   }
 
-  // Save last known count for next comparison
   community.lastCount = count;
-
   saveData();
 }
 
@@ -590,6 +617,7 @@ app.delete('/api/sessions/:id', async (req, res) => {
     const authFolder = path.join(CONFIG.SESSIONS_DIR, sid);
     if (fs.existsSync(authFolder)) fs.rmSync(authFolder, { recursive: true, force: true });
 
+    cleanupStaleData();
     saveData();
 
     console.log(`🗑️ Session ${sid} removed completely (${removed} communities cleaned)`);
@@ -609,7 +637,15 @@ app.post('/api/sessions/:id/logout', async (req, res) => {
     fs.rmSync(path.join(CONFIG.SESSIONS_DIR, sid), { recursive: true, force: true });
     delete sessions[sid];
 
-    if (db.phones[sid]) db.phones[sid].status = 'logged_out';
+    if (db.phones[sid]) delete db.phones[sid];
+
+    for (const cid of Object.keys(db.communities)) {
+      if (db.communities[cid].phoneId === sid) {
+        delete db.communities[cid];
+      }
+    }
+
+    cleanupStaleData();
     saveData();
 
     res.json({ success: true });
@@ -633,7 +669,7 @@ app.patch('/api/sessions/:id', async (req, res) => {
   if (!db.phones[sid]) db.phones[sid] = { id: sid, name: name.trim(), status: s.status };
   else db.phones[sid].name = name.trim();
 
-  // Update communities also so dashboard filter shows correct permanent label
+  // update communities instantly
   for (const cid of Object.keys(db.communities)) {
     if (db.communities[cid].phoneId === sid) {
       db.communities[cid].phoneName = name.trim();
@@ -646,23 +682,22 @@ app.patch('/api/sessions/:id', async (req, res) => {
   res.json({ success: true, newName: name.trim() });
 });
 
-// Communities
+// Communities (ONLY LIVE SESSION DATA)
 app.get('/api/communities', (req, res) => {
-  const c = Object.values(db.communities).sort((a, b) => b.count - a.count);
+  const activeSessionIds = new Set(Object.keys(sessions));
+
+  const c = Object.values(db.communities)
+    .filter(x => !x.phoneId || activeSessionIds.has(x.phoneId))
+    .sort((a, b) => b.count - a.count);
 
   const phoneMap = {};
-  Object.entries(db.phones).forEach(([id, p]) => {
-    phoneMap[id] = { ...p };
-  });
-
   Object.entries(sessions).forEach(([id, s]) => {
     phoneMap[id] = {
       id,
       number: s.phoneNumber,
       name: s.phoneName || id,
       status: s.status,
-      groupCount: s.groupCount || 0,
-      ...(phoneMap[id] || {})
+      groupCount: s.groupCount || 0
     };
   });
 
@@ -693,8 +728,10 @@ app.get('/api/status', (req, res) => {
     connectedPhones: cn,
     totalPhones: t,
     pendingQR: pq,
-    communities: Object.keys(db.communities).length,
-    totalMembers: Object.values(db.communities).reduce((a, c) => a + (c.count || 0), 0)
+    communities: Object.values(db.communities).filter(c => !c.phoneId || sessions[c.phoneId]).length,
+    totalMembers: Object.values(db.communities)
+      .filter(c => !c.phoneId || sessions[c.phoneId])
+      .reduce((a, c) => a + (c.count || 0), 0)
   });
 });
 
@@ -827,7 +864,6 @@ app.get('/api/export-excel', async (req, res) => {
       { header: 'Members', key: 'members', width: 15 },
     ];
 
-    // Style header row
     ws.getRow(1).eachCell(cell => {
       cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2D7A4F' } };
@@ -835,22 +871,23 @@ app.get('/api/export-excel', async (req, res) => {
     });
     ws.getRow(1).height = 24;
 
-    // Deduplicate by name — keep only the entry with highest member count
+    const activeSessionIds = new Set(Object.keys(sessions));
     const nameMap = {};
-    Object.values(db.communities).forEach(c => {
-      const key = (c.name || '').trim().toLowerCase();
-      if (!nameMap[key] || c.count > nameMap[key].count) nameMap[key] = c;
-    });
+
+    Object.values(db.communities)
+      .filter(c => !c.phoneId || activeSessionIds.has(c.phoneId))
+      .forEach(c => {
+        const key = (c.name || '').trim().toLowerCase();
+        if (!nameMap[key] || c.count > nameMap[key].count) nameMap[key] = c;
+      });
 
     const sorted = Object.values(nameMap).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-    // Add data rows using array format (reliable)
     for (const c of sorted) {
       const row = ws.addRow([c.name || '', c.count || 0]);
       row.getCell(2).alignment = { horizontal: 'center' };
     }
 
-    // Blank row then bold TOTAL
     ws.addRow([]);
     const total = sorted.reduce((a, c) => a + (c.count || 0), 0);
     const totalRow = ws.addRow(['TOTAL', total]);
@@ -885,7 +922,14 @@ app.get('/api/group/:groupId/invite', async (req, res) => {
 app.post('/api/send-message', upload.single('file'), async (req, res) => {
   const { type, text, caption, target } = req.body;
   const file = req.file;
-  const tgs = target === 'all' ? Object.keys(db.communities) : [target];
+
+  const activeSessionIds = new Set(Object.keys(sessions));
+  const allLiveGroups = Object.keys(db.communities).filter(gid => {
+    const c = db.communities[gid];
+    return !c?.phoneId || activeSessionIds.has(c.phoneId);
+  });
+
+  const tgs = target === 'all' ? allLiveGroups : [target];
   let sent = 0;
 
   for (const gid of tgs) {
@@ -1008,7 +1052,7 @@ app.get('/api/test-alert', async (req, res) => {
         text:
           `✅ *Test Alert*\n` +
           `Phones: ${Object.values(sessions).filter(x => x.status === 'connected').length}\n` +
-          `Groups: ${Object.keys(db.communities).length}\n` +
+          `Groups: ${Object.values(db.communities).filter(c => !c.phoneId || sessions[c.phoneId]).length}\n` +
           `Alert recipients: ${CONFIG.ALERT_NUMBERS.length}\n` +
           `— Habuild`
       });
@@ -1043,6 +1087,7 @@ app.listen(CONFIG.PORT, () => {
     });
   } else {
     console.log('📱 No sessions. Go to /phones.html to add phones.');
+    cleanupStaleData(); // IMPORTANT: clears old phones/communities if no sessions exist
   }
 
   setInterval(syncAllGroups, CONFIG.SYNC_INTERVAL);

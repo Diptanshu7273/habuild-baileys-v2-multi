@@ -108,6 +108,79 @@ tr:hover td{background:var(--bg)}
 #loadingOverlay p{margin-top:16px;color:var(--muted);font-size:14px}
 .conn-badge{font-size:11px;padding:4px 10px;border-radius:12px;font-weight:600}
 .conn-badge.ok{background:var(--safe-bg);color:var(--safe)}.conn-badge.bad{background:var(--danger-bg);color:var(--danger)}
+
+/* ── Multi Phone Filter Styles ───────────────────── */
+.phone-filter-wrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.multi-select{position:relative;min-width:290px}
+.multi-select-btn{
+  min-width:290px;
+  max-width:380px;
+  padding:7px 14px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  color:var(--ink);
+  font-family:'Montserrat',sans-serif;
+  font-size:13px;
+  outline:none;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.multi-select-btn:hover{border-color:#bfb7a7}
+.multi-select-btn .btn-label{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  flex:1;
+  text-align:left;
+}
+.multi-select-menu{
+  position:absolute;
+  top:calc(100% + 8px);
+  left:0;
+  min-width:100%;
+  width:max-content;
+  max-width:420px;
+  max-height:320px;
+  overflow-y:auto;
+  background:#111;
+  color:#fff;
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:18px;
+  box-shadow:0 16px 40px rgba(0,0,0,0.28);
+  padding:10px;
+  z-index:999;
+}
+.multi-select-menu.hidden{display:none}
+.multi-option{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  cursor:pointer;
+  font-size:13px;
+  user-select:none;
+}
+.multi-option:hover{background:rgba(255,255,255,0.08)}
+.multi-option input{accent-color:#2d5a8e;cursor:pointer}
+.multi-option.active{background:#0b57d0}
+.multi-option.all-option{
+  border-bottom:1px solid rgba(255,255,255,0.08);
+  margin-bottom:6px;
+  padding-bottom:12px;
+}
+@media (max-width: 900px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .multi-select,.multi-select-btn{min-width:100%;max-width:100%}
+}
+@media (max-width: 640px){
+  header, .config-bar, main{padding-left:18px;padding-right:18px}
+  .stats-row{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -127,6 +200,7 @@ tr:hover td{background:var(--bg)}
     <div id="lastSync">Syncing...</div>
   </div>
 </header>
+
 <div class="config-bar">
   <div><label>Server URL</label><input type="text" id="serverUrl" placeholder="http://localhost:3000" value="http://localhost:3000" /></div>
   <div class="config-divider"></div>
@@ -138,10 +212,13 @@ tr:hover td{background:var(--bg)}
   <button class="btn-config" onclick="saveConfig()">Save URL</button>
   <span style="font-size:12px;opacity:0.5;margin-left:8px;">Powered by Baileys (Free)</span>
 </div>
+
 <div id="toasts"></div>
+
 <main>
   <div id="alertStrip" class="hidden"><div class="alert-icon">🚨</div><div><div class="alert-title">URGENT — Communities At Maximum Limit!</div><div style="font-size:13px;opacity:0.85;">These groups need a NEW WhatsApp invite link immediately:</div><div id="alertItems"></div></div></div>
   <div id="warnStrip" class="hidden"><span>⚠️</span><div class="warn-title">Approaching limit (1600+) — prepare new links soon:</div><div id="warnItems"></div></div>
+
   <div class="stats-row">
     <div class="stat"><div class="stat-label">Total Groups</div><div class="stat-num c-accent" id="sTotal">—</div><div class="stat-desc">Being tracked</div></div>
     <div class="stat"><div class="stat-label">🔴 Need New Link</div><div class="stat-num c-danger" id="sDanger">—</div><div class="stat-desc">At 1800 members</div></div>
@@ -149,18 +226,44 @@ tr:hover td{background:var(--bg)}
     <div class="stat"><div class="stat-label">🟢 Safe</div><div class="stat-num c-safe" id="sSafe">—</div><div class="stat-desc">Under 1600</div></div>
     <div class="stat"><div class="stat-label">Total Members</div><div class="stat-num c-accent" id="sMembers">—</div><div class="stat-desc">Across all groups</div></div>
   </div>
-  <div class="toolbar"><h2>Communities</h2><div class="toolbar-right"><button class="btn btn-dark" onclick="window.location.href='phones.html'" style="background:#25D366;">📱 Manage Phones</button><button class="btn btn-dark" onclick="window.location.href='scheduler.html'" style="background:#2d5a8e;">📅 Schedule Messages</button><button class="btn btn-dark" onclick="downloadExcel()" style="background:#217346;">📊 Export Excel</button><button class="btn btn-outline" onclick="exportCSV()">⬇ CSV</button></div></div>
+
+  <div class="toolbar">
+    <h2>Communities</h2>
+    <div class="toolbar-right">
+      <button class="btn btn-dark" onclick="window.location.href='phones.html'" style="background:#25D366;">📱 Manage Phones</button>
+      <button class="btn btn-dark" onclick="window.location.href='scheduler.html'" style="background:#2d5a8e;">📅 Schedule Messages</button>
+      <button class="btn btn-dark" onclick="downloadExcel()" style="background:#217346;">📊 Export Excel</button>
+    </div>
+  </div>
+
   <div class="filters">
     <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
     <button class="filter-btn" onclick="setFilter('danger',this)">🔴 Need New Link</button>
     <button class="filter-btn" onclick="setFilter('warn',this)">🟡 Warning Zone</button>
     <button class="filter-btn" onclick="setFilter('safe',this)">🟢 Safe</button>
   </div>
+
   <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-    <span style="font-size:13px;color:var(--muted);">📱 Filter by phone:</span>
-    <select id="phoneFilter" onchange="renderCards()" style="padding:7px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--ink);font-family:'Montserrat',sans-serif;font-size:13px;outline:none;cursor:pointer;">
-      <option value="">All Phones</option>
-    </select>
+    <div class="phone-filter-wrap">
+      <span style="font-size:13px;color:var(--muted);">📱 Filter by phone:</span>
+
+      <div class="multi-select" id="phoneMultiSelect">
+        <button type="button" id="phoneDropdownBtn" class="multi-select-btn">
+          <span class="btn-label" id="phoneDropdownLabel">All Phones (0)</span>
+          <span>▾</span>
+        </button>
+
+        <div class="multi-select-menu hidden" id="phoneDropdownMenu">
+          <label class="multi-option all-option" id="allPhonesLabel">
+            <input type="checkbox" id="allPhonesOption" checked />
+            <span>All Phones</span>
+          </label>
+
+          <div id="phoneOptionsList"></div>
+        </div>
+      </div>
+    </div>
+
     <span style="font-size:13px;color:var(--muted);margin-left:8px;">🔃 Sort by:</span>
     <select id="sortOrder" onchange="renderCards()" style="padding:7px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--ink);font-family:'Montserrat',sans-serif;font-size:13px;outline:none;cursor:pointer;">
       <option value="members_desc">Members: High → Low</option>
@@ -172,26 +275,34 @@ tr:hover td{background:var(--bg)}
       <option value="updated_desc">Recently Updated</option>
       <option value="slots_asc">Least Slots Left</option>
     </select>
+
     <span id="phoneCount" style="font-size:12px;color:var(--muted);"></span>
   </div>
+
   <div class="search-box"><input type="text" id="searchInput" placeholder="Search communities..." oninput="renderCards()" /></div>
   <div class="grid" id="grid"></div>
+
   <div class="history-section">
     <div class="history-header"><h2>Update History</h2><span style="font-size:12px;color:var(--muted)">Last 50 changes</span></div>
     <table><thead><tr><th>Community</th><th>Members</th><th>Change</th><th>Status</th><th>Date & Time</th></tr></thead><tbody id="historyBody"></tbody></table>
     <div id="historyEmpty" style="text-align:center;padding:32px;color:var(--muted);font-size:13px;">No history yet.</div>
   </div>
 </main>
+
 <script>
 const WARN=1600,MAX=1800;
 let allCommunities=[],activeFilter='all';
 let serverUrl=localStorage.getItem('yct_server')||'http://localhost:3000';
+let allPhones=[];
+let selectedPhoneIds=[]; // empty = all phones
+
 document.getElementById('serverUrl').value=serverUrl;
 
 function saveConfig(){
   serverUrl=document.getElementById('serverUrl').value.trim().replace(/\/$/,'');
   localStorage.setItem('yct_server',serverUrl);
-  toast('Server URL saved!','success');fetchData();
+  toast('Server URL saved!','success');
+  fetchData();
 }
 
 async function loadAlertNumbers(){
@@ -228,32 +339,49 @@ async function removeAlertNumber(num){
 
 async function fetchData(){
   try{
-    const[comRes,histRes,statusRes]=await Promise.all([fetch(`${serverUrl}/api/communities`),fetch(`${serverUrl}/api/history`),fetch(`${serverUrl}/api/status`)]);
+    const[comRes,histRes,statusRes]=await Promise.all([
+      fetch(`${serverUrl}/api/communities`),
+      fetch(`${serverUrl}/api/history`),
+      fetch(`${serverUrl}/api/status`)
+    ]);
+
     const comData=await comRes.json(),histData=await histRes.json(),statusData=await statusRes.json();
+
     // Connection badge
     const badge=document.getElementById('connBadge');
-    if(statusData.status==='connected'){badge.className='conn-badge ok';badge.textContent='✅ Baileys Connected';}
-    else if(statusData.status==='qr'){badge.className='conn-badge bad';badge.textContent='📱 Scan QR';badge.style.cursor='pointer';badge.onclick=()=>window.open('qr.html','_blank');}
-    else{badge.className='conn-badge bad';badge.textContent='❌ Disconnected';}
+    badge.style.cursor='default';
+    badge.onclick=null;
+
+    if(statusData.status==='connected'){
+      badge.className='conn-badge ok';
+      badge.textContent='✅ Baileys Connected';
+    }else if(statusData.status==='qr' || statusData.status==='qr_pending'){
+      badge.className='conn-badge bad';
+      badge.textContent='📱 Scan QR';
+      badge.style.cursor='pointer';
+      badge.onclick=()=>window.open('qr.html','_blank');
+    }else{
+      badge.className='conn-badge bad';
+      badge.textContent='❌ Disconnected';
+    }
 
     const raw=comData.communities||[];
     const nameMap={};
-    for(const c of raw){const key=c.name.trim().toLowerCase();if(!nameMap[key]||c.count>nameMap[key].count)nameMap[key]=c;}
+    for(const c of raw){
+      const key=(c.name||'').trim().toLowerCase();
+      if(!nameMap[key]||c.count>nameMap[key].count) nameMap[key]=c;
+    }
     allCommunities=Object.values(nameMap);
 
-    // Populate phone filter dropdown
-    const phones=comData.phones||[];
-    const phoneFilter=document.getElementById('phoneFilter');
-    const currentVal=phoneFilter.value;
-    phoneFilter.innerHTML=`<option value="">All Phones (${phones.length})</option>`;
-    phones.forEach(p=>{
-      const label=p.name||p.number||p.id;
-      const num=p.number?` (+${p.number})`:'';
-      phoneFilter.innerHTML+=`<option value="${p.id}">${label}${num}</option>`;
-    });
-    phoneFilter.value=currentVal; // preserve selection
+    // Phones for multi-select
+    allPhones=comData.phones||[];
 
+    // Remove selected phones that no longer exist
+    selectedPhoneIds=selectedPhoneIds.filter(id=>allPhones.some(p=>p.id===id));
+
+    renderPhoneMultiSelect(allPhones);
     renderAll(histData.history||[]);
+
     document.getElementById('lastSync').textContent='Updated: '+new Date().toLocaleTimeString('en-IN');
     document.getElementById('loadingOverlay').style.opacity='0';
     setTimeout(()=>document.getElementById('loadingOverlay').style.display='none',400);
@@ -263,28 +391,197 @@ async function fetchData(){
   }
 }
 
-async function manualSync(){toast('Syncing with WhatsApp...','info');try{const res=await fetch(`${serverUrl}/api/sync`,{method:'POST'});const data=await res.json();toast(`Synced ${data.synced} communities!`,'success');fetchData();}catch{toast('Sync failed','danger');}}
-function getStatus(c){if(c>=MAX)return'danger';if(c>=WARN)return'warn';return'safe';}
-function getBadgeLabel(c){if(c>=MAX)return'🔴 Needs New Link';if(c>=WARN)return'🟡 Warning Zone';return'🟢 Safe';}
-function renderAll(history){renderStats();renderAlerts();renderCards();renderHistory(history);}
+/* ── Multi Phone Filter Logic ─────────────────────── */
+
+function renderPhoneMultiSelect(phones){
+  const list=document.getElementById('phoneOptionsList');
+  const allOption=document.getElementById('allPhonesOption');
+  const allLabel=document.getElementById('allPhonesLabel');
+
+  if(!list||!allOption) return;
+
+  list.innerHTML='';
+
+  phones.forEach(phone=>{
+    const label=document.createElement('label');
+    label.className='multi-option' + (selectedPhoneIds.includes(phone.id) ? ' active' : '');
+
+    const checked=selectedPhoneIds.includes(phone.id);
+    const displayName=phone.name||phone.id||'Unknown';
+    const displayNum=phone.number?` (+${phone.number})`:'';
+
+    label.innerHTML=`
+      <input type="checkbox" class="phone-checkbox" value="${phone.id}" ${checked?'checked':''} />
+      <span>${escapeHtml(displayName)}${escapeHtml(displayNum)}</span>
+    `;
+
+    list.appendChild(label);
+  });
+
+  const isAllSelected=selectedPhoneIds.length===0;
+  allOption.checked=isAllSelected;
+  allLabel.classList.toggle('active',isAllSelected);
+
+  // All Phones checkbox
+  allOption.onchange=()=>{
+    if(allOption.checked){
+      selectedPhoneIds=[];
+      document.querySelectorAll('.phone-checkbox').forEach(cb=>cb.checked=false);
+      document.querySelectorAll('#phoneOptionsList .multi-option').forEach(el=>el.classList.remove('active'));
+      allLabel.classList.add('active');
+      updatePhoneDropdownLabel();
+      renderCards();
+    }
+  };
+
+  // Individual phone checkboxes
+  document.querySelectorAll('.phone-checkbox').forEach(cb=>{
+    cb.onchange=()=>{
+      const value=cb.value;
+      const optionLabel=cb.closest('.multi-option');
+
+      if(cb.checked){
+        if(!selectedPhoneIds.includes(value)) selectedPhoneIds.push(value);
+        optionLabel?.classList.add('active');
+      }else{
+        selectedPhoneIds=selectedPhoneIds.filter(id=>id!==value);
+        optionLabel?.classList.remove('active');
+      }
+
+      const nowAllSelected=selectedPhoneIds.length===0;
+      allOption.checked=nowAllSelected;
+      allLabel.classList.toggle('active',nowAllSelected);
+
+      updatePhoneDropdownLabel();
+      renderCards();
+    };
+  });
+
+  updatePhoneDropdownLabel();
+}
+
+function updatePhoneDropdownLabel(){
+  const labelEl=document.getElementById('phoneDropdownLabel');
+  if(!labelEl) return;
+
+  if(selectedPhoneIds.length===0){
+    labelEl.textContent=`All Phones (${allPhones.length})`;
+    return;
+  }
+
+  if(selectedPhoneIds.length===1){
+    const phone=allPhones.find(p=>p.id===selectedPhoneIds[0]);
+    if(phone){
+      const name=phone.name||phone.id||'Phone';
+      const num=phone.number?` (+${phone.number})`:'';
+      labelEl.textContent=`${name}${num}`;
+      return;
+    }
+  }
+
+  labelEl.textContent=`${selectedPhoneIds.length} Phones Selected`;
+}
+
+function setupPhoneDropdown(){
+  const btn=document.getElementById('phoneDropdownBtn');
+  const menu=document.getElementById('phoneDropdownMenu');
+  const wrapper=document.getElementById('phoneMultiSelect');
+
+  if(!btn||!menu||!wrapper) return;
+
+  btn.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    menu.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click',(e)=>{
+    if(!wrapper.contains(e.target)){
+      menu.classList.add('hidden');
+    }
+  });
+}
+
+/* ── Renderers ─────────────────────────────────────── */
+
+async function manualSync(){
+  toast('Syncing with WhatsApp...','info');
+  try{
+    const res=await fetch(`${serverUrl}/api/sync`,{method:'POST'});
+    const data=await res.json();
+    toast(`Synced ${data.synced} communities!`,'success');
+    fetchData();
+  }catch{
+    toast('Sync failed','danger');
+  }
+}
+
+function getStatus(c){
+  if(c>=MAX) return 'danger';
+  if(c>=WARN) return 'warn';
+  return 'safe';
+}
+
+function getBadgeLabel(c){
+  if(c>=MAX) return '🔴 Needs New Link';
+  if(c>=WARN) return '🟡 Warning Zone';
+  return '🟢 Safe';
+}
+
+function renderAll(history){
+  renderStats();
+  renderAlerts();
+  renderCards();
+  renderHistory(history);
+}
+
 function renderStats(){
-  const total=allCommunities.length,danger=allCommunities.filter(c=>c.count>=MAX).length,warn=allCommunities.filter(c=>c.count>=WARN&&c.count<MAX).length,safe=allCommunities.filter(c=>c.count<WARN).length,members=allCommunities.reduce((a,c)=>a+(c.count||0),0);
-  document.getElementById('sTotal').textContent=total;document.getElementById('sDanger').textContent=danger;document.getElementById('sWarn').textContent=warn;document.getElementById('sSafe').textContent=safe;document.getElementById('sMembers').textContent=members.toLocaleString('en-IN');
+  const total=allCommunities.length,
+        danger=allCommunities.filter(c=>c.count>=MAX).length,
+        warn=allCommunities.filter(c=>c.count>=WARN&&c.count<MAX).length,
+        safe=allCommunities.filter(c=>c.count<WARN).length,
+        members=allCommunities.reduce((a,c)=>a+(c.count||0),0);
+
+  document.getElementById('sTotal').textContent=total;
+  document.getElementById('sDanger').textContent=danger;
+  document.getElementById('sWarn').textContent=warn;
+  document.getElementById('sSafe').textContent=safe;
+  document.getElementById('sMembers').textContent=members.toLocaleString('en-IN');
 }
+
 function renderAlerts(){
-  const dangers=allCommunities.filter(c=>c.count>=MAX),warns=allCommunities.filter(c=>c.count>=WARN&&c.count<MAX);
-  const as=document.getElementById('alertStrip'),ws=document.getElementById('warnStrip');
-  if(dangers.length>0){as.classList.remove('hidden');document.getElementById('alertItems').innerHTML=dangers.map(c=>`<span>${c.name} — ${c.count}</span>`).join('');}else as.classList.add('hidden');
-  if(warns.length>0){ws.classList.remove('hidden');document.getElementById('warnItems').innerHTML=warns.map(c=>`<span>${c.name} (${c.count})</span>`).join('');}else ws.classList.add('hidden');
+  const dangers=allCommunities.filter(c=>c.count>=MAX),
+        warns=allCommunities.filter(c=>c.count>=WARN&&c.count<MAX);
+
+  const as=document.getElementById('alertStrip'),
+        ws=document.getElementById('warnStrip');
+
+  if(dangers.length>0){
+    as.classList.remove('hidden');
+    document.getElementById('alertItems').innerHTML=dangers.map(c=>`<span>${escapeHtml(c.name)} — ${c.count}</span>`).join('');
+  }else as.classList.add('hidden');
+
+  if(warns.length>0){
+    ws.classList.remove('hidden');
+    document.getElementById('warnItems').innerHTML=warns.map(c=>`<span>${escapeHtml(c.name)} (${c.count})</span>`).join('');
+  }else ws.classList.add('hidden');
 }
+
 function renderCards(){
-  const grid=document.getElementById('grid'),q=document.getElementById('searchInput').value.toLowerCase();
-  const phoneFilterVal=document.getElementById('phoneFilter')?.value||'';
-  const sortOrder=document.getElementById('sortOrder')?.value||'members_desc';
+  const grid=document.getElementById('grid'),
+        q=document.getElementById('searchInput').value.toLowerCase(),
+        sortOrder=document.getElementById('sortOrder')?.value||'members_desc';
+
   let list=allCommunities.filter(c=>{
-    if(q&&!c.name.toLowerCase().includes(q))return false;
-    if(phoneFilterVal&&c.phoneId!==phoneFilterVal)return false;
-    const s=getStatus(c.count);if(activeFilter==='danger')return s==='danger';if(activeFilter==='warn')return s==='warn';if(activeFilter==='safe')return s==='safe';return true;
+    if(q && !(c.name||'').toLowerCase().includes(q)) return false;
+
+    // Multi-phone filter
+    if(selectedPhoneIds.length>0 && !selectedPhoneIds.includes(c.phoneId)) return false;
+
+    const s=getStatus(c.count);
+    if(activeFilter==='danger') return s==='danger';
+    if(activeFilter==='warn') return s==='warn';
+    if(activeFilter==='safe') return s==='safe';
+    return true;
   });
 
   // Sort
@@ -303,38 +600,116 @@ function renderCards(){
   });
 
   const countEl=document.getElementById('phoneCount');
-  if(countEl)countEl.textContent=`${list.length} communities`;
+  if(countEl) countEl.textContent=`${list.length} communities`;
 
-  if(!list.length){grid.innerHTML=`<div class="empty"><div class="empty-icon">🌿</div><h3>No communities found</h3><p>Waiting for WhatsApp sync</p></div>`;return;}
+  if(!list.length){
+    grid.innerHTML=`<div class="empty"><div class="empty-icon">🌿</div><h3>No communities found</h3><p>Try changing filters or sync again</p></div>`;
+    return;
+  }
+
   grid.innerHTML=list.map((c,i)=>{
-    const status=getStatus(c.count),pct=Math.min((c.count/MAX)*100,100).toFixed(1),slots=MAX-c.count,updated=c.updatedAt?new Date(c.updatedAt).toLocaleString('en-IN'):'Unknown';
-    const phoneLabel=c.phoneId?`📱 ${c.phoneId}${c.phoneNumber?' (+'+c.phoneNumber+')':''}`:'' ;
+    const status=getStatus(c.count),
+          pct=Math.min((c.count/MAX)*100,100).toFixed(1),
+          slots=MAX-c.count,
+          updated=c.updatedAt?new Date(c.updatedAt).toLocaleString('en-IN'):'Unknown';
+
+    const displayPhoneName=c.phoneName || c.phoneId || '';
+    const phoneLabel=displayPhoneName
+      ? `📱 ${displayPhoneName}${c.phoneNumber?' (+'+c.phoneNumber+')':''}`
+      : '';
+
     return`<div class="card c-${status}" style="animation-delay:${i*0.04}s;cursor:pointer;" onclick="window.location.href='members.html?id='+encodeURIComponent('${c.id}')">
-      <div class="card-head"><div><div class="card-name">${c.name}</div>${phoneLabel?`<div style="font-size:11px;color:var(--muted);margin-top:3px;">${phoneLabel}</div>`:''}</div><span class="badge badge-${status}">${getBadgeLabel(c.count)}</span></div>
-      <div class="prog-wrap"><div class="prog-labels"><span>Members</span><strong>${c.count.toLocaleString()} / ${MAX}</strong></div><div class="prog-track"><div class="prog-fill fill-${status}" style="width:${pct}%"></div></div></div>
-      <div class="card-chips"><span class="chip">Slots: <strong>${slots>0?slots.toLocaleString():'⛔ FULL'}</strong></span><span class="chip">Fill: <strong>${pct}%</strong></span></div>
-      <div class="card-foot"><div class="card-time">Updated: ${updated}</div></div>
+      <div class="card-head">
+        <div>
+          <div class="card-name">${escapeHtml(c.name||'Unnamed')}</div>
+          ${phoneLabel?`<div style="font-size:11px;color:var(--muted);margin-top:3px;">${escapeHtml(phoneLabel)}</div>`:''}
+        </div>
+        <span class="badge badge-${status}">${getBadgeLabel(c.count)}</span>
+      </div>
+
+      <div class="prog-wrap">
+        <div class="prog-labels">
+          <span>Members</span>
+          <strong>${(c.count||0).toLocaleString()} / ${MAX}</strong>
+        </div>
+        <div class="prog-track"><div class="prog-fill fill-${status}" style="width:${pct}%"></div></div>
+      </div>
+
+      <div class="card-chips">
+        <span class="chip">Slots: <strong>${slots>0?slots.toLocaleString():'⛔ FULL'}</strong></span>
+        <span class="chip">Fill: <strong>${pct}%</strong></span>
+      </div>
+
+      <div class="card-foot">
+        <div class="card-time">Updated: ${updated}</div>
+      </div>
     </div>`;
   }).join('');
 }
+
 function renderHistory(history){
-  const tbody=document.getElementById('historyBody'),empty=document.getElementById('historyEmpty');
-  if(!history.length){tbody.innerHTML='';empty.style.display='block';return;}
+  const tbody=document.getElementById('historyBody'),
+        empty=document.getElementById('historyEmpty');
+
+  if(!history.length){
+    tbody.innerHTML='';
+    empty.style.display='block';
+    return;
+  }
+
   empty.style.display='none';
-  tbody.innerHTML=history.slice(0,50).map(h=>{const s=getStatus(h.count);const ch=h.change>0?`<span style="color:var(--safe)">+${h.change}</span>`:h.change<0?`<span style="color:var(--danger)">${h.change}</span>`:'—';return`<tr><td><strong>${h.groupName}</strong></td><td>${h.count.toLocaleString()}</td><td>${ch}</td><td><span class="badge badge-${s}" style="font-size:11px">${getBadgeLabel(h.count)}</span></td><td>${new Date(h.date).toLocaleString('en-IN')}</td></tr>`;}).join('');
+
+  tbody.innerHTML=history.slice(0,50).map(h=>{
+    const s=getStatus(h.count);
+    const ch=h.change>0
+      ? `<span style="color:var(--safe)">+${h.change}</span>`
+      : h.change<0
+        ? `<span style="color:var(--danger)">${h.change}</span>`
+        : '—';
+
+    return`<tr>
+      <td><strong>${escapeHtml(h.groupName||'Unnamed')}</strong></td>
+      <td>${(h.count||0).toLocaleString()}</td>
+      <td>${ch}</td>
+      <td><span class="badge badge-${s}" style="font-size:11px">${getBadgeLabel(h.count)}</span></td>
+      <td>${h.date ? new Date(h.date).toLocaleString('en-IN') : '—'}</td>
+    </tr>`;
+  }).join('');
 }
-function setFilter(f,btn){activeFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderCards();}
-function exportCSV(){
-  const rows=[['Name','Members','Slots Left','Fill %','Status','Last Updated']];
-  allCommunities.forEach(c=>rows.push([c.name,c.count,MAX-c.count,((c.count/MAX)*100).toFixed(1)+'%',getBadgeLabel(c.count),c.updatedAt||'']));
-  const csv=rows.map(r=>r.map(x=>`"${x}"`).join(',')).join('\n');
-  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=`habuild-communities-${new Date().toISOString().slice(0,10)}.csv`;a.click();toast('CSV exported!','success');
+
+function setFilter(f,btn){
+  activeFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
 }
+
 function downloadExcel(){
   toast('Generating Excel...','info');
   window.location.href=`${serverUrl}/api/export-excel`;
 }
-function toast(msg,type='info'){const icons={danger:'🚨',warn:'⚠️',success:'✅',info:'ℹ️'};const el=document.createElement('div');el.className=`toast toast-${type}`;el.innerHTML=`<span>${icons[type]}</span><span>${msg}</span>`;document.getElementById('toasts').appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity 0.3s';},4000);setTimeout(()=>el.remove(),4400);}
+
+function toast(msg,type='info'){
+  const icons={danger:'🚨',warn:'⚠️',success:'✅',info:'ℹ️'};
+  const el=document.createElement('div');
+  el.className=`toast toast-${type}`;
+  el.innerHTML=`<span>${icons[type]}</span><span>${msg}</span>`;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity 0.3s';},4000);
+  setTimeout(()=>el.remove(),4400);
+}
+
+function escapeHtml(str=''){
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+/* Init */
+setupPhoneDropdown();
 setInterval(fetchData,30000);
 fetchData();
 loadAlertNumbers();
