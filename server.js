@@ -905,6 +905,138 @@ app.get('/api/export-excel', async (req, res) => {
   }
 });
 
+// ── Excel Export — All Members by Community ──────────
+app.get('/api/export-members-excel', async (req, res) => {
+  try {
+    const ExcelJS = require('exceljs');
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Habuild Tracker';
+    const ws = wb.addWorksheet('Members by Community', { views: [{ state: 'frozen', ySplit: 1 }] });
+
+    ws.columns = [
+      { header: 'Community Name', key: 'community', width: 50 },
+      { header: 'Phone Number',   key: 'phone',     width: 25 },
+      { header: 'Role',           key: 'role',       width: 18 },
+    ];
+
+    // Style header row
+    ws.getRow(1).eachCell(cell => {
+      cell.font      = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11, name: 'Arial' };
+      cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2D7A4F' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+    ws.getRow(1).height = 24;
+
+    // Deduplicate communities by name, keep highest count, sort A-Z
+    const activeSessionIds = new Set(Object.keys(sessions));
+    const nameMap = {};
+    Object.values(db.communities)
+      .filter(c => !c.phoneId || activeSessionIds.has(c.phoneId))
+      .forEach(c => {
+        const key = (c.name || '').trim().toLowerCase();
+        if (!nameMap[key] || c.count > nameMap[key].count) nameMap[key] = c;
+      });
+    const sorted = Object.values(nameMap).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    // Alternate row background colors per community for readability
+    const COLORS = ['FFFFFFFF', 'FFF0F7F4']; // white / very light green
+    let colorIdx = 0;
+    let totalRows = 0;
+
+    for (const community of sorted) {
+      const s = findSessionForGroup(community.id);
+
+      let members = [];
+      if (s?.sock) {
+        try {
+          const m = await s.sock.groupMetadata(community.id);
+          const lidStore = s.sock.signalRepository?.lidMapping || null;
+
+          members = await Promise.all(m.participants.map(async (p) => {
+            const raw   = p.id || '';
+            const isLid = raw.includes('@lid');
+            const lidNum = raw
+              .replace('@s.whatsapp.net', '')
+              .replace('@lid', '')
+              .replace(':*', '')
+              .split(':')[0]
+              .trim();
+
+            let realNumber = null;
+            if (p.phoneNumber) {
+              realNumber = p.phoneNumber.replace('@s.whatsapp.net', '').replace('+', '').trim();
+            } else if (p.pn) {
+              realNumber = p.pn.replace('@s.whatsapp.net', '').replace('+', '').trim();
+            } else if (p.jid && p.jid.includes('@s.whatsapp.net')) {
+              realNumber = p.jid.replace('@s.whatsapp.net', '').trim();
+            } else if (isLid && lidStore) {
+              try {
+                const pn = await lidStore.getPNForLID(raw);
+                if (pn) realNumber = pn.replace('@s.whatsapp.net', '').trim();
+              } catch (e) {}
+            }
+            if (!isLid) realNumber = lidNum;
+
+            const role = (p.admin === 'superadmin' || p.admin === 'admin') ? 'Admin' : 'Member';
+            return { phone: realNumber || lidNum || 'Unknown', role };
+          }));
+        } catch (e) {
+          console.error(`Members export error for ${community.name}:`, e.message);
+        }
+      }
+
+      // If session unavailable or fetch failed, write a placeholder row
+      if (members.length === 0) {
+        const row = ws.addRow([community.name, '(No session connected)', '']);
+        row.eachCell(cell => {
+          cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS[colorIdx % 2] } };
+          cell.font      = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF999999' } };
+          cell.alignment = { vertical: 'middle' };
+        });
+        totalRows++;
+      } else {
+        const bg = COLORS[colorIdx % 2];
+        for (const mem of members) {
+          const row = ws.addRow([community.name, mem.phone, mem.role]);
+          row.eachCell((cell, colNum) => {
+            cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+            cell.font      = { name: 'Arial', size: 10 };
+            cell.alignment = { vertical: 'middle', horizontal: colNum === 2 ? 'left' : 'left' };
+          });
+          // Bold the role if Admin
+          if (mem.role === 'Admin') {
+            row.getCell(3).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF2D5A8E' } };
+          }
+          totalRows++;
+        }
+      }
+
+      colorIdx++;
+      await delay(300); // small pause between groups to avoid overwhelming Baileys
+    }
+
+    // Summary row at bottom
+    ws.addRow([]);
+    const summaryRow = ws.addRow([`Total: ${sorted.length} communities`, `${totalRows} members`, '']);
+    summaryRow.eachCell(cell => {
+      cell.font      = { bold: true, size: 11, name: 'Arial' };
+      cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2D7A4F' } };
+      cell.font      = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11, name: 'Arial' };
+      cell.alignment = { vertical: 'middle' };
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="Habuild-Members-${new Date().toISOString().slice(0, 10)}.xlsx"`);
+    await wb.xlsx.write(res);
+    res.end();
+
+    console.log(`✅ Members Excel exported: ${sorted.length} communities, ${totalRows} rows`);
+  } catch (e) {
+    console.error('Members Excel export error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Invite link
 app.get('/api/group/:groupId/invite', async (req, res) => {
   const s = findSessionForGroup(req.params.groupId);

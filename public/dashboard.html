@@ -1,628 +1,1509 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Habuild Community Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#f5f2eb;--surface:#ffffff;--surface2:#ede9df;--border:#d8d2c4;--ink:#1a1a18;--muted:#7a7568;--danger:#c0392b;--danger-bg:#fdf0ee;--warn:#b8860b;--warn-bg:#fefae8;--safe:#2d7a4f;--safe-bg:#edf7f2;--accent:#2d5a8e;--accent-bg:#eef3fa;--wa:#25D366}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:'Montserrat',sans-serif;min-height:100vh}
-body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:0.4}
-header{position:sticky;top:0;z-index:50;background:rgba(245,242,235,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 48px;display:flex;align-items:center;justify-content:space-between;height:68px}
-.logo{display:flex;align-items:center;gap:12px}
-.logo-mark{width:36px;height:36px;background:var(--ink);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff}
-.logo-name{font-size:17px;font-weight:700;letter-spacing:-0.3px}
-.logo-sub{font-size:11px;color:var(--muted)}
-.header-right{display:flex;align-items:center;gap:12px}
-.live-badge{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--safe);background:var(--safe-bg);border:1px solid rgba(45,122,79,0.2);padding:5px 12px;border-radius:20px}
-.live-dot{width:7px;height:7px;background:var(--safe);border-radius:50%;animation:livepulse 1.5s infinite}
-@keyframes livepulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
-#lastSync{font-size:11px;color:var(--muted)}
-.config-bar{background:var(--ink);color:#fff;padding:14px 48px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;position:relative;z-index:1}
-.config-bar label{font-size:12px;opacity:0.6;margin-right:6px}
-.config-bar input{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:6px 12px;border-radius:8px;font-size:13px;font-family:'Montserrat',sans-serif;outline:none;width:200px}
-.config-bar input:focus{border-color:rgba(255,255,255,0.5)}
-.config-bar input::placeholder{opacity:0.4}
-.btn-config{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'Montserrat',sans-serif;transition:all 0.2s}
-.btn-config:hover{background:rgba(255,255,255,0.25)}
-.config-divider{width:1px;height:24px;background:rgba(255,255,255,0.15)}
-main{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:40px 48px}
-#alertStrip{display:none;background:var(--danger);color:#fff;padding:14px 24px;border-radius:14px;margin-bottom:28px;display:flex;align-items:flex-start;gap:14px}
-#alertStrip.hidden{display:none!important}
-.alert-icon{font-size:22px;flex-shrink:0}
-.alert-title{font-size:15px;font-weight:700;margin-bottom:6px}
-#alertItems{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-#alertItems span{background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:20px;font-size:12px}
-#warnStrip{display:none;background:var(--warn-bg);border:1px solid rgba(184,134,11,0.3);padding:12px 20px;border-radius:12px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-#warnStrip.hidden{display:none!important}
-.warn-title{font-size:13px;font-weight:600;color:var(--warn);flex:1}
-#warnItems{display:flex;flex-wrap:wrap;gap:8px}
-#warnItems span{background:rgba(184,134,11,0.1);border:1px solid rgba(184,134,11,0.2);color:var(--warn);padding:3px 10px;border-radius:14px;font-size:12px}
-.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:36px}
-.stat{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px 20px;transition:transform 0.2s,box-shadow 0.2s}
-.stat:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.06)}
-.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:12px}
-.stat-num{font-size:38px;font-weight:800;line-height:1;letter-spacing:-2px}
-.stat-num.c-danger{color:var(--danger)}.stat-num.c-warn{color:var(--warn)}.stat-num.c-safe{color:var(--safe)}.stat-num.c-accent{color:var(--accent)}
-.stat-desc{font-size:12px;color:var(--muted);margin-top:6px}
-.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
-.toolbar h2{font-size:22px;font-weight:700}
-.toolbar-right{display:flex;gap:10px}
-.btn{padding:9px 18px;border-radius:10px;font-size:13px;font-family:'Montserrat',sans-serif;font-weight:500;cursor:pointer;border:none;transition:all 0.2s}
-.btn-dark{background:var(--ink);color:#fff}.btn-dark:hover{opacity:0.85}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--ink)}.btn-outline:hover{border-color:var(--ink)}
-.filters{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
-.filter-btn{padding:6px 16px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Montserrat',sans-serif;transition:all 0.2s}
-.filter-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-.search-box{width:100%;margin-bottom:22px;position:relative}
-.search-box input{width:100%;padding:12px 18px 12px 46px;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:14px;color:var(--ink);font-family:'Montserrat',sans-serif;outline:none;transition:border-color 0.2s,box-shadow 0.2s}
-.search-box input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(45,90,142,0.08)}
-.search-box::before{content:'🔍';position:absolute;left:16px;top:13px;font-size:16px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:24px;transition:all 0.22s;animation:fadeUp 0.3s ease both;position:relative;overflow:hidden}
-.card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:18px 0 0 18px}
-.card.c-danger::before{background:var(--danger)}.card.c-warn::before{background:var(--warn)}.card.c-safe::before{background:var(--safe)}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.card:hover{border-color:#bbb;transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,0.07)}
-.card::after{content:"View Members →";position:absolute;bottom:14px;right:20px;font-size:11px;color:var(--accent);font-weight:600;opacity:0;transition:opacity 0.2s}
-.card:hover::after{opacity:1}
-.card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
-.card-name{font-size:15px;font-weight:700;line-height:1.3;padding-left:8px}
-.badge{padding:4px 10px;border-radius:14px;font-size:11px;font-weight:600;white-space:nowrap;flex-shrink:0}
-.badge-danger{background:var(--danger-bg);color:var(--danger)}.badge-warn{background:var(--warn-bg);color:var(--warn)}.badge-safe{background:var(--safe-bg);color:var(--safe)}
-.prog-wrap{margin-bottom:16px;padding-left:8px}
-.prog-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px}
-.prog-labels strong{color:var(--ink);font-size:13px}
-.prog-track{height:8px;background:var(--surface2);border-radius:10px;overflow:hidden}
-.prog-fill{height:100%;border-radius:10px;transition:width 0.6s cubic-bezier(0.4,0,0.2,1)}
-.fill-safe{background:linear-gradient(90deg,#5ecb8f,#2d7a4f)}.fill-warn{background:linear-gradient(90deg,#f0c060,#b8860b)}.fill-danger{background:linear-gradient(90deg,#f06060,#c0392b);animation:glowred 2s infinite}
-@keyframes glowred{0%,100%{box-shadow:none}50%{box-shadow:0 0 10px rgba(192,57,43,0.5)}}
-.card-chips{display:flex;gap:8px;margin-bottom:14px;padding-left:8px;flex-wrap:wrap}
-.chip{font-size:11px;padding:3px 10px;border-radius:8px;background:var(--surface2);color:var(--muted)}
-.chip strong{color:var(--ink)}
-.card-foot{display:flex;justify-content:space-between;align-items:center;padding-left:8px}
-.card-time{font-size:11px;color:var(--muted)}
-.empty{grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)}
-.empty-icon{font-size:48px;margin-bottom:14px}
-.empty h3{font-size:20px;color:var(--ink);margin-bottom:8px}
-.history-section{margin-top:44px;background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden}
-.history-header{padding:22px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.history-header h2{font-size:18px;font-weight:700}
-table{width:100%;border-collapse:collapse}
-th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.7px;color:var(--muted);padding:12px 28px;border-bottom:1px solid var(--border);background:var(--bg)}
-td{padding:14px 28px;font-size:13px;border-bottom:1px solid var(--surface2)}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--bg)}
-#toasts{position:fixed;top:80px;right:24px;z-index:200;display:flex;flex-direction:column;gap:10px}
-.toast{padding:14px 18px;border-radius:12px;font-size:13px;max-width:320px;display:flex;gap:10px;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,0.12);animation:toastIn 0.3s ease}
-@keyframes toastIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
-.toast-danger{background:#fff;border-left:4px solid var(--danger);color:var(--ink)}
-.toast-warn{background:#fff;border-left:4px solid var(--warn);color:var(--ink)}
-.toast-success{background:#fff;border-left:4px solid var(--safe);color:var(--ink)}
-.toast-info{background:#fff;border-left:4px solid var(--accent);color:var(--ink)}
-#loadingOverlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity 0.4s}
-.loader-icon{font-size:48px;animation:spin 2s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-#loadingOverlay p{margin-top:16px;color:var(--muted);font-size:14px}
-.conn-badge{font-size:11px;padding:4px 10px;border-radius:12px;font-weight:600}
-.conn-badge.ok{background:var(--safe-bg);color:var(--safe)}.conn-badge.bad{background:var(--danger-bg);color:var(--danger)}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Habuild Community Tracker</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f5f2eb;
+        --surface: #ffffff;
+        --surface2: #ede9df;
+        --border: #d8d2c4;
+        --ink: #1a1a18;
+        --muted: #7a7568;
+        --danger: #c0392b;
+        --danger-bg: #fdf0ee;
+        --warn: #b8860b;
+        --warn-bg: #fefae8;
+        --safe: #2d7a4f;
+        --safe-bg: #edf7f2;
+        --accent: #2d5a8e;
+        --accent-bg: #eef3fa;
+        --wa: #25d366;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Montserrat", sans-serif;
+        min-height: 100vh;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.4;
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(245, 242, 235, 0.92);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--border);
+        padding: 0 48px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 68px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .logo-mark {
+        width: 36px;
+        height: 36px;
+        background: var(--ink);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        color: #fff;
+      }
+      .logo-name {
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+      }
+      .logo-sub {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .live-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--safe);
+        background: var(--safe-bg);
+        border: 1px solid rgba(45, 122, 79, 0.2);
+        padding: 5px 12px;
+        border-radius: 20px;
+      }
+      .live-dot {
+        width: 7px;
+        height: 7px;
+        background: var(--safe);
+        border-radius: 50%;
+        animation: livepulse 1.5s infinite;
+      }
+      @keyframes livepulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(0.8);
+        }
+      }
+      #lastSync {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .config-bar {
+        background: var(--ink);
+        color: #fff;
+        padding: 14px 48px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 1;
+      }
+      .config-bar label {
+        font-size: 12px;
+        opacity: 0.6;
+        margin-right: 6px;
+      }
+      .config-bar input {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-family: "Montserrat", sans-serif;
+        outline: none;
+        width: 200px;
+      }
+      .config-bar input:focus {
+        border-color: rgba(255, 255, 255, 0.5);
+      }
+      .config-bar input::placeholder {
+        opacity: 0.4;
+      }
+      .btn-config {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        color: #fff;
+        padding: 7px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+        font-family: "Montserrat", sans-serif;
+        transition: all 0.2s;
+      }
+      .btn-config:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+      .config-divider {
+        width: 1px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.15);
+      }
+      main {
+        position: relative;
+        z-index: 1;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 40px 48px;
+      }
+      #alertStrip {
+        display: none;
+        background: var(--danger);
+        color: #fff;
+        padding: 14px 24px;
+        border-radius: 14px;
+        margin-bottom: 28px;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+      }
+      #alertStrip.hidden {
+        display: none !important;
+      }
+      .alert-icon {
+        font-size: 22px;
+        flex-shrink: 0;
+      }
+      .alert-title {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      #alertItems {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      #alertItems span {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+      }
+      #warnStrip {
+        display: none;
+        background: var(--warn-bg);
+        border: 1px solid rgba(184, 134, 11, 0.3);
+        padding: 12px 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      #warnStrip.hidden {
+        display: none !important;
+      }
+      .warn-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--warn);
+        flex: 1;
+      }
+      #warnItems {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      #warnItems span {
+        background: rgba(184, 134, 11, 0.1);
+        border: 1px solid rgba(184, 134, 11, 0.2);
+        color: var(--warn);
+        padding: 3px 10px;
+        border-radius: 14px;
+        font-size: 12px;
+      }
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 16px;
+        margin-bottom: 36px;
+      }
+      .stat {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 22px 20px;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+      .stat:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      }
+      .stat-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--muted);
+        margin-bottom: 12px;
+      }
+      .stat-num {
+        font-size: 38px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -2px;
+      }
+      .stat-num.c-danger {
+        color: var(--danger);
+      }
+      .stat-num.c-warn {
+        color: var(--warn);
+      }
+      .stat-num.c-safe {
+        color: var(--safe);
+      }
+      .stat-num.c-accent {
+        color: var(--accent);
+      }
+      .stat-desc {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .toolbar h2 {
+        font-size: 22px;
+        font-weight: 700;
+      }
+      .toolbar-right {
+        display: flex;
+        gap: 10px;
+      }
+      .btn {
+        padding: 9px 18px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-family: "Montserrat", sans-serif;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+      }
+      .btn-dark {
+        background: var(--ink);
+        color: #fff;
+      }
+      .btn-dark:hover {
+        opacity: 0.85;
+      }
+      .btn-outline {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--ink);
+      }
+      .btn-outline:hover {
+        border-color: var(--ink);
+      }
+      .filters {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 22px;
+        flex-wrap: wrap;
+      }
+      .filter-btn {
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--muted);
+        font-family: "Montserrat", sans-serif;
+        transition: all 0.2s;
+      }
+      .filter-btn.active {
+        background: var(--ink);
+        color: #fff;
+        border-color: var(--ink);
+      }
+      .search-box {
+        width: 100%;
+        margin-bottom: 22px;
+        position: relative;
+      }
+      .search-box input {
+        width: 100%;
+        padding: 12px 18px 12px 46px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        font-size: 14px;
+        color: var(--ink);
+        font-family: "Montserrat", sans-serif;
+        outline: none;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+      }
+      .search-box input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(45, 90, 142, 0.08);
+      }
+      .search-box::before {
+        content: "🔍";
+        position: absolute;
+        left: 16px;
+        top: 13px;
+        font-size: 16px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 24px;
+        transition: all 0.22s;
+        animation: fadeUp 0.3s ease both;
+        position: relative;
+        overflow: hidden;
+      }
+      .card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        border-radius: 18px 0 0 18px;
+      }
+      .card.c-danger::before {
+        background: var(--danger);
+      }
+      .card.c-warn::before {
+        background: var(--warn);
+      }
+      .card.c-safe::before {
+        background: var(--safe);
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .card:hover {
+        border-color: #bbb;
+        transform: translateY(-3px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.07);
+      }
+      .card::after {
+        content: "View Members →";
+        position: absolute;
+        bottom: 14px;
+        right: 20px;
+        font-size: 11px;
+        color: var(--accent);
+        font-weight: 600;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .card:hover::after {
+        opacity: 1;
+      }
+      .card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 18px;
+      }
+      .card-name {
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.3;
+        padding-left: 8px;
+      }
+      .badge {
+        padding: 4px 10px;
+        border-radius: 14px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .badge-danger {
+        background: var(--danger-bg);
+        color: var(--danger);
+      }
+      .badge-warn {
+        background: var(--warn-bg);
+        color: var(--warn);
+      }
+      .badge-safe {
+        background: var(--safe-bg);
+        color: var(--safe);
+      }
+      .prog-wrap {
+        margin-bottom: 16px;
+        padding-left: 8px;
+      }
+      .prog-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .prog-labels strong {
+        color: var(--ink);
+        font-size: 13px;
+      }
+      .prog-track {
+        height: 8px;
+        background: var(--surface2);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .prog-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .fill-safe {
+        background: linear-gradient(90deg, #5ecb8f, #2d7a4f);
+      }
+      .fill-warn {
+        background: linear-gradient(90deg, #f0c060, #b8860b);
+      }
+      .fill-danger {
+        background: linear-gradient(90deg, #f06060, #c0392b);
+        animation: glowred 2s infinite;
+      }
+      @keyframes glowred {
+        0%,
+        100% {
+          box-shadow: none;
+        }
+        50% {
+          box-shadow: 0 0 10px rgba(192, 57, 43, 0.5);
+        }
+      }
+      .card-chips {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 14px;
+        padding-left: 8px;
+        flex-wrap: wrap;
+      }
+      .chip {
+        font-size: 11px;
+        padding: 3px 10px;
+        border-radius: 8px;
+        background: var(--surface2);
+        color: var(--muted);
+      }
+      .chip strong {
+        color: var(--ink);
+      }
+      .card-foot {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-left: 8px;
+      }
+      .card-time {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .empty {
+        grid-column: 1/-1;
+        text-align: center;
+        padding: 60px;
+        color: var(--muted);
+      }
+      .empty-icon {
+        font-size: 48px;
+        margin-bottom: 14px;
+      }
+      .empty h3 {
+        font-size: 20px;
+        color: var(--ink);
+        margin-bottom: 8px;
+      }
+      .history-section {
+        margin-top: 44px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        overflow: hidden;
+      }
+      .history-header {
+        padding: 22px 28px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .history-header h2 {
+        font-size: 18px;
+        font-weight: 700;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th {
+        text-align: left;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        color: var(--muted);
+        padding: 12px 28px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+      }
+      td {
+        padding: 14px 28px;
+        font-size: 13px;
+        border-bottom: 1px solid var(--surface2);
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      tr:hover td {
+        background: var(--bg);
+      }
+      #toasts {
+        position: fixed;
+        top: 80px;
+        right: 24px;
+        z-index: 200;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .toast {
+        padding: 14px 18px;
+        border-radius: 12px;
+        font-size: 13px;
+        max-width: 320px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        animation: toastIn 0.3s ease;
+      }
+      @keyframes toastIn {
+        from {
+          opacity: 0;
+          transform: translateX(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      .toast-danger {
+        background: #fff;
+        border-left: 4px solid var(--danger);
+        color: var(--ink);
+      }
+      .toast-warn {
+        background: #fff;
+        border-left: 4px solid var(--warn);
+        color: var(--ink);
+      }
+      .toast-success {
+        background: #fff;
+        border-left: 4px solid var(--safe);
+        color: var(--ink);
+      }
+      .toast-info {
+        background: #fff;
+        border-left: 4px solid var(--accent);
+        color: var(--ink);
+      }
+      #loadingOverlay {
+        position: fixed;
+        inset: 0;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+        transition: opacity 0.4s;
+      }
+      .loader-icon {
+        font-size: 48px;
+        animation: spin 2s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      #loadingOverlay p {
+        margin-top: 16px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .conn-badge {
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-weight: 600;
+      }
+      .conn-badge.ok {
+        background: var(--safe-bg);
+        color: var(--safe);
+      }
+      .conn-badge.bad {
+        background: var(--danger-bg);
+        color: var(--danger);
+      }
 
-/* ── Multi Phone Filter Styles ───────────────────── */
-.phone-filter-wrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.multi-select{position:relative;min-width:290px}
-.multi-select-btn{
-  min-width:290px;
-  max-width:380px;
-  padding:7px 14px;
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:10px;
-  color:var(--ink);
-  font-family:'Montserrat',sans-serif;
-  font-size:13px;
-  outline:none;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-.multi-select-btn:hover{border-color:#bfb7a7}
-.multi-select-btn .btn-label{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  flex:1;
-  text-align:left;
-}
-.multi-select-menu{
-  position:absolute;
-  top:calc(100% + 8px);
-  left:0;
-  min-width:100%;
-  width:max-content;
-  max-width:420px;
-  max-height:320px;
-  overflow-y:auto;
-  background:#111;
-  color:#fff;
-  border:1px solid rgba(255,255,255,0.12);
-  border-radius:18px;
-  box-shadow:0 16px 40px rgba(0,0,0,0.28);
-  padding:10px;
-  z-index:999;
-}
-.multi-select-menu.hidden{display:none}
-.multi-option{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10px 12px;
-  border-radius:12px;
-  cursor:pointer;
-  font-size:13px;
-  user-select:none;
-}
-.multi-option:hover{background:rgba(255,255,255,0.08)}
-.multi-option input{accent-color:#2d5a8e;cursor:pointer}
-.multi-option.active{background:#0b57d0}
-.multi-option.all-option{
-  border-bottom:1px solid rgba(255,255,255,0.08);
-  margin-bottom:6px;
-  padding-bottom:12px;
-}
-@media (max-width: 900px){
-  .stats-row{grid-template-columns:repeat(2,1fr)}
-  .multi-select,.multi-select-btn{min-width:100%;max-width:100%}
-}
-@media (max-width: 640px){
-  header, .config-bar, main{padding-left:18px;padding-right:18px}
-  .stats-row{grid-template-columns:1fr}
-}
-</style>
-</head>
-<body>
-<div id="loadingOverlay"><div class="loader-icon">🌿</div><p>Connecting to Baileys...</p></div>
-<header>
-  <div class="logo">
-    <img src="habuild-logo.jpg" style="width:42px;height:42px;border-radius:10px;object-fit:cover;" alt="Habuild Logo" />
-    <div>
-      <div class="logo-name">Habuild</div>
-      <div class="logo-sub">Community Management</div>
+      /* ── Multi Phone Filter Styles ───────────────────── */
+      .phone-filter-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .multi-select {
+        position: relative;
+        min-width: 290px;
+      }
+      .multi-select-btn {
+        min-width: 290px;
+        max-width: 380px;
+        padding: 7px 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--ink);
+        font-family: "Montserrat", sans-serif;
+        font-size: 13px;
+        outline: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .multi-select-btn:hover {
+        border-color: #bfb7a7;
+      }
+      .multi-select-btn .btn-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+        text-align: left;
+      }
+      .multi-select-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        min-width: 100%;
+        width: max-content;
+        max-width: 420px;
+        max-height: 320px;
+        overflow-y: auto;
+        background: #111;
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 18px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+        padding: 10px;
+        z-index: 999;
+      }
+      .multi-select-menu.hidden {
+        display: none;
+      }
+      .multi-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 13px;
+        user-select: none;
+      }
+      .multi-option:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .multi-option input {
+        accent-color: #2d5a8e;
+        cursor: pointer;
+      }
+      .multi-option.active {
+        background: #0b57d0;
+      }
+      .multi-option.all-option {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        margin-bottom: 6px;
+        padding-bottom: 12px;
+      }
+      @media (max-width: 900px) {
+        .stats-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .multi-select,
+        .multi-select-btn {
+          min-width: 100%;
+          max-width: 100%;
+        }
+      }
+      @media (max-width: 640px) {
+        header,
+        .config-bar,
+        main {
+          padding-left: 18px;
+          padding-right: 18px;
+        }
+        .stats-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loadingOverlay">
+      <div class="loader-icon">🌿</div>
+      <p>Connecting to Baileys...</p>
     </div>
-    <button class="btn btn-dark" onclick="manualSync()" style="margin-left:16px;">↻ Sync Now</button>
-  </div>
-  <div class="header-right">
-    <span id="connBadge" class="conn-badge bad">Checking...</span>
-    <div class="live-badge"><div class="live-dot"></div> Live</div>
-    <div id="lastSync">Syncing...</div>
-  </div>
-</header>
-
-<div class="config-bar">
-  <div><label>Server URL</label><input type="text" id="serverUrl" placeholder="http://localhost:3000" value="http://localhost:3000" /></div>
-  <div class="config-divider"></div>
-  <div><label>Add Alert Number</label><input type="tel" id="newAlertNum" placeholder="+919876543210" style="width:160px" /></div>
-  <button class="btn-config" onclick="addAlertNumber()">+ Add</button>
-  <div class="config-divider"></div>
-  <div id="alertNumList" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"></div>
-  <div class="config-divider"></div>
-  <button class="btn-config" onclick="saveConfig()">Save URL</button>
-  <span style="font-size:12px;opacity:0.5;margin-left:8px;">Powered by Baileys (Free)</span>
-</div>
-
-<div id="toasts"></div>
-
-<main>
-  <div id="alertStrip" class="hidden"><div class="alert-icon">🚨</div><div><div class="alert-title">URGENT — Communities At Maximum Limit!</div><div style="font-size:13px;opacity:0.85;">These groups need a NEW WhatsApp invite link immediately:</div><div id="alertItems"></div></div></div>
-  <div id="warnStrip" class="hidden"><span>⚠️</span><div class="warn-title">Approaching limit (1600+) — prepare new links soon:</div><div id="warnItems"></div></div>
-
-  <div class="stats-row">
-    <div class="stat"><div class="stat-label">Total Groups</div><div class="stat-num c-accent" id="sTotal">—</div><div class="stat-desc">Being tracked</div></div>
-    <div class="stat"><div class="stat-label">🔴 Need New Link</div><div class="stat-num c-danger" id="sDanger">—</div><div class="stat-desc">At 1800 members</div></div>
-    <div class="stat"><div class="stat-label">🟡 Warning Zone</div><div class="stat-num c-warn" id="sWarn">—</div><div class="stat-desc">1600–1799</div></div>
-    <div class="stat"><div class="stat-label">🟢 Safe</div><div class="stat-num c-safe" id="sSafe">—</div><div class="stat-desc">Under 1600</div></div>
-    <div class="stat"><div class="stat-label">Total Members</div><div class="stat-num c-accent" id="sMembers">—</div><div class="stat-desc">Across all groups</div></div>
-  </div>
-
-  <div class="toolbar">
-    <h2>Communities</h2>
-    <div class="toolbar-right">
-      <button class="btn btn-dark" onclick="window.location.href='phones.html'" style="background:#25D366;">📱 Manage Phones</button>
-      <button class="btn btn-dark" onclick="window.location.href='scheduler.html'" style="background:#2d5a8e;">📅 Schedule Messages</button>
-      <button class="btn btn-dark" onclick="downloadExcel()" style="background:#217346;">📊 Export Excel</button>
-    </div>
-  </div>
-
-  <div class="filters">
-    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
-    <button class="filter-btn" onclick="setFilter('danger',this)">🔴 Need New Link</button>
-    <button class="filter-btn" onclick="setFilter('warn',this)">🟡 Warning Zone</button>
-    <button class="filter-btn" onclick="setFilter('safe',this)">🟢 Safe</button>
-  </div>
-
-  <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-    <div class="phone-filter-wrap">
-      <span style="font-size:13px;color:var(--muted);">📱 Filter by phone:</span>
-
-      <div class="multi-select" id="phoneMultiSelect">
-        <button type="button" id="phoneDropdownBtn" class="multi-select-btn">
-          <span class="btn-label" id="phoneDropdownLabel">All Phones (0)</span>
-          <span>▾</span>
+    <header>
+      <div class="logo">
+        <img
+          src="habuild-logo.jpg"
+          style="
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            object-fit: cover;
+          "
+          alt="Habuild Logo"
+        />
+        <div>
+          <div class="logo-name">Habuild</div>
+          <div class="logo-sub">Community Management</div>
+        </div>
+        <button
+          class="btn btn-dark"
+          onclick="manualSync()"
+          style="margin-left: 16px"
+        >
+          ↻ Sync Now
         </button>
+      </div>
+      <div class="header-right">
+        <span id="connBadge" class="conn-badge bad">Checking...</span>
+        <div class="live-badge">
+          <div class="live-dot"></div>
+          Live
+        </div>
+        <div id="lastSync">Syncing...</div>
+      </div>
+    </header>
 
-        <div class="multi-select-menu hidden" id="phoneDropdownMenu">
-          <label class="multi-option all-option" id="allPhonesLabel">
-            <input type="checkbox" id="allPhonesOption" checked />
-            <span>All Phones</span>
-          </label>
+    <div class="config-bar">
+      <div>
+        <label>Server URL</label
+        ><input
+          type="text"
+          id="serverUrl"
+          placeholder="http://localhost:3000"
+          value="http://localhost:3000"
+        />
+      </div>
+      <div class="config-divider"></div>
+      <div>
+        <label>Add Alert Number</label
+        ><input
+          type="tel"
+          id="newAlertNum"
+          placeholder="+919876543210"
+          style="width: 160px"
+        />
+      </div>
+      <button class="btn-config" onclick="addAlertNumber()">+ Add</button>
+      <div class="config-divider"></div>
+      <div
+        id="alertNumList"
+        style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center"
+      ></div>
+      <div class="config-divider"></div>
+      <button class="btn-config" onclick="saveConfig()">Save URL</button>
+      <span style="font-size: 12px; opacity: 0.5; margin-left: 8px"
+        >Powered by Baileys (Free)</span
+      >
+    </div>
 
-          <div id="phoneOptionsList"></div>
+    <div id="toasts"></div>
+
+    <main>
+      <div id="alertStrip" class="hidden">
+        <div class="alert-icon">🚨</div>
+        <div>
+          <div class="alert-title">URGENT — Communities At Maximum Limit!</div>
+          <div style="font-size: 13px; opacity: 0.85">
+            These groups need a NEW WhatsApp invite link immediately:
+          </div>
+          <div id="alertItems"></div>
         </div>
       </div>
-    </div>
+      <div id="warnStrip" class="hidden">
+        <span>⚠️</span>
+        <div class="warn-title">
+          Approaching limit (1600+) — prepare new links soon:
+        </div>
+        <div id="warnItems"></div>
+      </div>
 
-    <span style="font-size:13px;color:var(--muted);margin-left:8px;">🔃 Sort by:</span>
-    <select id="sortOrder" onchange="renderCards()" style="padding:7px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--ink);font-family:'Montserrat',sans-serif;font-size:13px;outline:none;cursor:pointer;">
-      <option value="members_desc">Members: High → Low</option>
-      <option value="members_asc">Members: Low → High</option>
-      <option value="name_asc">Name: A → Z</option>
-      <option value="name_desc">Name: Z → A</option>
-      <option value="fill_desc">Fill %: High → Low</option>
-      <option value="fill_asc">Fill %: Low → High</option>
-      <option value="updated_desc">Recently Updated</option>
-      <option value="slots_asc">Least Slots Left</option>
-    </select>
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-label">Total Groups</div>
+          <div class="stat-num c-accent" id="sTotal">—</div>
+          <div class="stat-desc">Being tracked</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">🔴 Need New Link</div>
+          <div class="stat-num c-danger" id="sDanger">—</div>
+          <div class="stat-desc">At 1800 members</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">🟡 Warning Zone</div>
+          <div class="stat-num c-warn" id="sWarn">—</div>
+          <div class="stat-desc">1600–1799</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">🟢 Safe</div>
+          <div class="stat-num c-safe" id="sSafe">—</div>
+          <div class="stat-desc">Under 1600</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Total Members</div>
+          <div class="stat-num c-accent" id="sMembers">—</div>
+          <div class="stat-desc">Across all groups</div>
+        </div>
+      </div>
 
-    <span id="phoneCount" style="font-size:12px;color:var(--muted);"></span>
-  </div>
+      <div class="toolbar">
+        <h2>Communities</h2>
+        <div class="toolbar-right">
+          <button
+            class="btn btn-dark"
+            onclick="window.location.href = 'phones.html'"
+            style="background: #25d366"
+          >
+            📱 Manage Phones
+          </button>
+          <button
+            class="btn btn-dark"
+            onclick="window.location.href = 'scheduler.html'"
+            style="background: #2d5a8e"
+          >
+            📅 Schedule Messages
+          </button>
+          <button
+            class="btn btn-dark"
+            onclick="downloadExcel()"
+            style="background: #217346"
+          >
+            📊 Export Excel
+          </button>
+          <button
+            class="btn btn-outline"
+            onclick="window.open(serverUrl + '/api/export-members-excel')"
+            style="border-color: #2d7a4f; color: #2d7a4f"
+          >
+            👥 Export Members
+          </button>
+        </div>
+      </div>
 
-  <div class="search-box"><input type="text" id="searchInput" placeholder="Search communities..." oninput="renderCards()" /></div>
-  <div class="grid" id="grid"></div>
+      <div class="filters">
+        <button class="filter-btn active" onclick="setFilter('all', this)">
+          All
+        </button>
+        <button class="filter-btn" onclick="setFilter('danger', this)">
+          🔴 Need New Link
+        </button>
+        <button class="filter-btn" onclick="setFilter('warn', this)">
+          🟡 Warning Zone
+        </button>
+        <button class="filter-btn" onclick="setFilter('safe', this)">
+          🟢 Safe
+        </button>
+      </div>
 
-  <div class="history-section">
-    <div class="history-header"><h2>Update History</h2><span style="font-size:12px;color:var(--muted)">Last 50 changes</span></div>
-    <table><thead><tr><th>Community</th><th>Members</th><th>Change</th><th>Status</th><th>Date & Time</th></tr></thead><tbody id="historyBody"></tbody></table>
-    <div id="historyEmpty" style="text-align:center;padding:32px;color:var(--muted);font-size:13px;">No history yet.</div>
-  </div>
-</main>
+      <div
+        style="
+          margin-bottom: 16px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        "
+      >
+        <div class="phone-filter-wrap">
+          <span style="font-size: 13px; color: var(--muted)"
+            >📱 Filter by phone:</span
+          >
 
-<script>
-const WARN=1600,MAX=1800;
-let allCommunities=[],activeFilter='all';
-let serverUrl=localStorage.getItem('yct_server')||'http://localhost:3000';
-let allPhones=[];
-let selectedPhoneIds=[]; // empty = all phones
+          <div class="multi-select" id="phoneMultiSelect">
+            <button
+              type="button"
+              id="phoneDropdownBtn"
+              class="multi-select-btn"
+            >
+              <span class="btn-label" id="phoneDropdownLabel"
+                >All Phones (0)</span
+              >
+              <span>▾</span>
+            </button>
 
-document.getElementById('serverUrl').value=serverUrl;
+            <div class="multi-select-menu hidden" id="phoneDropdownMenu">
+              <label class="multi-option all-option" id="allPhonesLabel">
+                <input type="checkbox" id="allPhonesOption" checked />
+                <span>All Phones</span>
+              </label>
 
-function saveConfig(){
-  serverUrl=document.getElementById('serverUrl').value.trim().replace(/\/$/,'');
-  localStorage.setItem('yct_server',serverUrl);
-  toast('Server URL saved!','success');
-  fetchData();
-}
+              <div id="phoneOptionsList"></div>
+            </div>
+          </div>
+        </div>
 
-async function loadAlertNumbers(){
-  try{
-    const res=await fetch(`${serverUrl}/api/config`);
-    const data=await res.json();
-    const list=document.getElementById('alertNumList');
-    const nums=data.alertNumbers||[];
-    if(!nums.length){list.innerHTML='<span style="font-size:11px;opacity:0.5;">No alert numbers</span>';return;}
-    list.innerHTML=nums.map(n=>`<span style="background:rgba(255,255,255,0.15);padding:4px 8px 4px 12px;border-radius:14px;font-size:12px;display:flex;align-items:center;gap:6px;">+${n}<span style="cursor:pointer;opacity:0.7;font-size:14px;" onclick="removeAlertNumber('${n}')">&times;</span></span>`).join('');
-  }catch(e){}
-}
+        <span style="font-size: 13px; color: var(--muted); margin-left: 8px"
+          >🔃 Sort by:</span
+        >
+        <select
+          id="sortOrder"
+          onchange="renderCards()"
+          style="
+            padding: 7px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--ink);
+            font-family: &quot;Montserrat&quot;, sans-serif;
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+          "
+        >
+          <option value="members_desc">Members: High → Low</option>
+          <option value="members_asc">Members: Low → High</option>
+          <option value="name_asc">Name: A → Z</option>
+          <option value="name_desc">Name: Z → A</option>
+          <option value="fill_desc">Fill %: High → Low</option>
+          <option value="fill_asc">Fill %: Low → High</option>
+          <option value="updated_desc">Recently Updated</option>
+          <option value="slots_asc">Least Slots Left</option>
+        </select>
 
-async function addAlertNumber(){
-  const input=document.getElementById('newAlertNum');
-  const num=input.value.trim().replace(/[^0-9]/g,'');
-  if(!num||num.length<10){input.style.borderColor='rgba(255,100,100,0.5)';return;}
-  input.style.borderColor='rgba(255,255,255,0.2)';
-  try{
-    await fetch(`${serverUrl}/api/config`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({addNumber:num})});
-    input.value='';
-    toast(`+${num} added to alerts!`,'success');
-    loadAlertNumbers();
-  }catch(e){toast('Failed to add','danger');}
-}
+        <span
+          id="phoneCount"
+          style="font-size: 12px; color: var(--muted)"
+        ></span>
+      </div>
 
-async function removeAlertNumber(num){
-  try{
-    await fetch(`${serverUrl}/api/config`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({removeNumber:num})});
-    toast(`+${num} removed from alerts`,'info');
-    loadAlertNumbers();
-  }catch(e){}
-}
+      <div class="search-box">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search communities..."
+          oninput="renderCards()"
+        />
+      </div>
+      <div class="grid" id="grid"></div>
 
-async function fetchData(){
-  try{
-    const[comRes,histRes,statusRes]=await Promise.all([
-      fetch(`${serverUrl}/api/communities`),
-      fetch(`${serverUrl}/api/history`),
-      fetch(`${serverUrl}/api/status`)
-    ]);
+      <div class="history-section">
+        <div class="history-header">
+          <h2>Update History</h2>
+          <span style="font-size: 12px; color: var(--muted)"
+            >Last 50 changes</span
+          >
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Community</th>
+              <th>Members</th>
+              <th>Change</th>
+              <th>Status</th>
+              <th>Date & Time</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+        <div
+          id="historyEmpty"
+          style="
+            text-align: center;
+            padding: 32px;
+            color: var(--muted);
+            font-size: 13px;
+          "
+        >
+          No history yet.
+        </div>
+      </div>
+    </main>
 
-    const comData=await comRes.json(),histData=await histRes.json(),statusData=await statusRes.json();
+    <script>
+      const WARN = 1600,
+        MAX = 1800;
+      let allCommunities = [],
+        activeFilter = "all";
+      let serverUrl =
+        localStorage.getItem("yct_server") || "http://localhost:3000";
+      let allPhones = [];
+      let selectedPhoneIds = []; // empty = all phones
 
-    // Connection badge
-    const badge=document.getElementById('connBadge');
-    badge.style.cursor='default';
-    badge.onclick=null;
+      document.getElementById("serverUrl").value = serverUrl;
 
-    if(statusData.status==='connected'){
-      badge.className='conn-badge ok';
-      badge.textContent='✅ Baileys Connected';
-    }else if(statusData.status==='qr' || statusData.status==='qr_pending'){
-      badge.className='conn-badge bad';
-      badge.textContent='📱 Scan QR';
-      badge.style.cursor='pointer';
-      badge.onclick=()=>window.open('qr.html','_blank');
-    }else{
-      badge.className='conn-badge bad';
-      badge.textContent='❌ Disconnected';
-    }
+      function saveConfig() {
+        serverUrl = document
+          .getElementById("serverUrl")
+          .value.trim()
+          .replace(/\/$/, "");
+        localStorage.setItem("yct_server", serverUrl);
+        toast("Server URL saved!", "success");
+        fetchData();
+      }
 
-    const raw=comData.communities||[];
-    const nameMap={};
-    for(const c of raw){
-      const key=(c.name||'').trim().toLowerCase();
-      if(!nameMap[key]||c.count>nameMap[key].count) nameMap[key]=c;
-    }
-    allCommunities=Object.values(nameMap);
+      async function loadAlertNumbers() {
+        try {
+          const res = await fetch(`${serverUrl}/api/config`);
+          const data = await res.json();
+          const list = document.getElementById("alertNumList");
+          const nums = data.alertNumbers || [];
+          if (!nums.length) {
+            list.innerHTML =
+              '<span style="font-size:11px;opacity:0.5;">No alert numbers</span>';
+            return;
+          }
+          list.innerHTML = nums
+            .map(
+              (n) =>
+                `<span style="background:rgba(255,255,255,0.15);padding:4px 8px 4px 12px;border-radius:14px;font-size:12px;display:flex;align-items:center;gap:6px;">+${n}<span style="cursor:pointer;opacity:0.7;font-size:14px;" onclick="removeAlertNumber('${n}')">&times;</span></span>`,
+            )
+            .join("");
+        } catch (e) {}
+      }
 
-    // Phones for multi-select
-    allPhones=comData.phones||[];
+      async function addAlertNumber() {
+        const input = document.getElementById("newAlertNum");
+        const num = input.value.trim().replace(/[^0-9]/g, "");
+        if (!num || num.length < 10) {
+          input.style.borderColor = "rgba(255,100,100,0.5)";
+          return;
+        }
+        input.style.borderColor = "rgba(255,255,255,0.2)";
+        try {
+          await fetch(`${serverUrl}/api/config`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ addNumber: num }),
+          });
+          input.value = "";
+          toast(`+${num} added to alerts!`, "success");
+          loadAlertNumbers();
+        } catch (e) {
+          toast("Failed to add", "danger");
+        }
+      }
 
-    // Remove selected phones that no longer exist
-    selectedPhoneIds=selectedPhoneIds.filter(id=>allPhones.some(p=>p.id===id));
+      async function removeAlertNumber(num) {
+        try {
+          await fetch(`${serverUrl}/api/config`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ removeNumber: num }),
+          });
+          toast(`+${num} removed from alerts`, "info");
+          loadAlertNumbers();
+        } catch (e) {}
+      }
 
-    renderPhoneMultiSelect(allPhones);
-    renderAll(histData.history||[]);
+      async function fetchData() {
+        try {
+          const [comRes, histRes, statusRes] = await Promise.all([
+            fetch(`${serverUrl}/api/communities`),
+            fetch(`${serverUrl}/api/history`),
+            fetch(`${serverUrl}/api/status`),
+          ]);
 
-    document.getElementById('lastSync').textContent='Updated: '+new Date().toLocaleTimeString('en-IN');
-    document.getElementById('loadingOverlay').style.opacity='0';
-    setTimeout(()=>document.getElementById('loadingOverlay').style.display='none',400);
-  }catch(err){
-    document.getElementById('loadingOverlay').style.display='none';
-    toast('Cannot connect to server.','danger');
-  }
-}
+          const comData = await comRes.json(),
+            histData = await histRes.json(),
+            statusData = await statusRes.json();
 
-/* ── Multi Phone Filter Logic ─────────────────────── */
+          // Connection badge
+          const badge = document.getElementById("connBadge");
+          badge.style.cursor = "default";
+          badge.onclick = null;
 
-function renderPhoneMultiSelect(phones){
-  const list=document.getElementById('phoneOptionsList');
-  const allOption=document.getElementById('allPhonesOption');
-  const allLabel=document.getElementById('allPhonesLabel');
+          if (statusData.status === "connected") {
+            badge.className = "conn-badge ok";
+            badge.textContent = "✅ Baileys Connected";
+          } else if (
+            statusData.status === "qr" ||
+            statusData.status === "qr_pending"
+          ) {
+            badge.className = "conn-badge bad";
+            badge.textContent = "📱 Scan QR";
+            badge.style.cursor = "pointer";
+            badge.onclick = () => window.open("qr.html", "_blank");
+          } else {
+            badge.className = "conn-badge bad";
+            badge.textContent = "❌ Disconnected";
+          }
 
-  if(!list||!allOption) return;
+          const raw = comData.communities || [];
+          const nameMap = {};
+          for (const c of raw) {
+            const key = (c.name || "").trim().toLowerCase();
+            if (!nameMap[key] || c.count > nameMap[key].count) nameMap[key] = c;
+          }
+          allCommunities = Object.values(nameMap);
 
-  list.innerHTML='';
+          // Phones for multi-select
+          allPhones = comData.phones || [];
 
-  phones.forEach(phone=>{
-    const label=document.createElement('label');
-    label.className='multi-option' + (selectedPhoneIds.includes(phone.id) ? ' active' : '');
+          // Remove selected phones that no longer exist
+          selectedPhoneIds = selectedPhoneIds.filter((id) =>
+            allPhones.some((p) => p.id === id),
+          );
 
-    const checked=selectedPhoneIds.includes(phone.id);
-    const displayName=phone.name||phone.id||'Unknown';
-    const displayNum=phone.number?` (+${phone.number})`:'';
+          renderPhoneMultiSelect(allPhones);
+          renderAll(histData.history || []);
 
-    label.innerHTML=`
-      <input type="checkbox" class="phone-checkbox" value="${phone.id}" ${checked?'checked':''} />
+          document.getElementById("lastSync").textContent =
+            "Updated: " + new Date().toLocaleTimeString("en-IN");
+          document.getElementById("loadingOverlay").style.opacity = "0";
+          setTimeout(
+            () =>
+              (document.getElementById("loadingOverlay").style.display =
+                "none"),
+            400,
+          );
+        } catch (err) {
+          document.getElementById("loadingOverlay").style.display = "none";
+          toast("Cannot connect to server.", "danger");
+        }
+      }
+
+      /* ── Multi Phone Filter Logic ─────────────────────── */
+
+      function renderPhoneMultiSelect(phones) {
+        const list = document.getElementById("phoneOptionsList");
+        const allOption = document.getElementById("allPhonesOption");
+        const allLabel = document.getElementById("allPhonesLabel");
+
+        if (!list || !allOption) return;
+
+        list.innerHTML = "";
+
+        phones.forEach((phone) => {
+          const label = document.createElement("label");
+          label.className =
+            "multi-option" +
+            (selectedPhoneIds.includes(phone.id) ? " active" : "");
+
+          const checked = selectedPhoneIds.includes(phone.id);
+          const displayName = phone.name || phone.id || "Unknown";
+          const displayNum = phone.number ? ` (+${phone.number})` : "";
+
+          label.innerHTML = `
+      <input type="checkbox" class="phone-checkbox" value="${phone.id}" ${checked ? "checked" : ""} />
       <span>${escapeHtml(displayName)}${escapeHtml(displayNum)}</span>
     `;
 
-    list.appendChild(label);
-  });
+          list.appendChild(label);
+        });
 
-  const isAllSelected=selectedPhoneIds.length===0;
-  allOption.checked=isAllSelected;
-  allLabel.classList.toggle('active',isAllSelected);
+        const isAllSelected = selectedPhoneIds.length === 0;
+        allOption.checked = isAllSelected;
+        allLabel.classList.toggle("active", isAllSelected);
 
-  // All Phones checkbox
-  allOption.onchange=()=>{
-    if(allOption.checked){
-      selectedPhoneIds=[];
-      document.querySelectorAll('.phone-checkbox').forEach(cb=>cb.checked=false);
-      document.querySelectorAll('#phoneOptionsList .multi-option').forEach(el=>el.classList.remove('active'));
-      allLabel.classList.add('active');
-      updatePhoneDropdownLabel();
-      renderCards();
-    }
-  };
+        // All Phones checkbox
+        allOption.onchange = () => {
+          if (allOption.checked) {
+            selectedPhoneIds = [];
+            document
+              .querySelectorAll(".phone-checkbox")
+              .forEach((cb) => (cb.checked = false));
+            document
+              .querySelectorAll("#phoneOptionsList .multi-option")
+              .forEach((el) => el.classList.remove("active"));
+            allLabel.classList.add("active");
+            updatePhoneDropdownLabel();
+            renderCards();
+          }
+        };
 
-  // Individual phone checkboxes
-  document.querySelectorAll('.phone-checkbox').forEach(cb=>{
-    cb.onchange=()=>{
-      const value=cb.value;
-      const optionLabel=cb.closest('.multi-option');
+        // Individual phone checkboxes
+        document.querySelectorAll(".phone-checkbox").forEach((cb) => {
+          cb.onchange = () => {
+            const value = cb.value;
+            const optionLabel = cb.closest(".multi-option");
 
-      if(cb.checked){
-        if(!selectedPhoneIds.includes(value)) selectedPhoneIds.push(value);
-        optionLabel?.classList.add('active');
-      }else{
-        selectedPhoneIds=selectedPhoneIds.filter(id=>id!==value);
-        optionLabel?.classList.remove('active');
+            if (cb.checked) {
+              if (!selectedPhoneIds.includes(value))
+                selectedPhoneIds.push(value);
+              optionLabel?.classList.add("active");
+            } else {
+              selectedPhoneIds = selectedPhoneIds.filter((id) => id !== value);
+              optionLabel?.classList.remove("active");
+            }
+
+            const nowAllSelected = selectedPhoneIds.length === 0;
+            allOption.checked = nowAllSelected;
+            allLabel.classList.toggle("active", nowAllSelected);
+
+            updatePhoneDropdownLabel();
+            renderCards();
+          };
+        });
+
+        updatePhoneDropdownLabel();
       }
 
-      const nowAllSelected=selectedPhoneIds.length===0;
-      allOption.checked=nowAllSelected;
-      allLabel.classList.toggle('active',nowAllSelected);
+      function updatePhoneDropdownLabel() {
+        const labelEl = document.getElementById("phoneDropdownLabel");
+        if (!labelEl) return;
 
-      updatePhoneDropdownLabel();
-      renderCards();
-    };
-  });
+        if (selectedPhoneIds.length === 0) {
+          labelEl.textContent = `All Phones (${allPhones.length})`;
+          return;
+        }
 
-  updatePhoneDropdownLabel();
-}
+        if (selectedPhoneIds.length === 1) {
+          const phone = allPhones.find((p) => p.id === selectedPhoneIds[0]);
+          if (phone) {
+            const name = phone.name || phone.id || "Phone";
+            const num = phone.number ? ` (+${phone.number})` : "";
+            labelEl.textContent = `${name}${num}`;
+            return;
+          }
+        }
 
-function updatePhoneDropdownLabel(){
-  const labelEl=document.getElementById('phoneDropdownLabel');
-  if(!labelEl) return;
+        labelEl.textContent = `${selectedPhoneIds.length} Phones Selected`;
+      }
 
-  if(selectedPhoneIds.length===0){
-    labelEl.textContent=`All Phones (${allPhones.length})`;
-    return;
-  }
+      function setupPhoneDropdown() {
+        const btn = document.getElementById("phoneDropdownBtn");
+        const menu = document.getElementById("phoneDropdownMenu");
+        const wrapper = document.getElementById("phoneMultiSelect");
 
-  if(selectedPhoneIds.length===1){
-    const phone=allPhones.find(p=>p.id===selectedPhoneIds[0]);
-    if(phone){
-      const name=phone.name||phone.id||'Phone';
-      const num=phone.number?` (+${phone.number})`:'';
-      labelEl.textContent=`${name}${num}`;
-      return;
-    }
-  }
+        if (!btn || !menu || !wrapper) return;
 
-  labelEl.textContent=`${selectedPhoneIds.length} Phones Selected`;
-}
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          menu.classList.toggle("hidden");
+        });
 
-function setupPhoneDropdown(){
-  const btn=document.getElementById('phoneDropdownBtn');
-  const menu=document.getElementById('phoneDropdownMenu');
-  const wrapper=document.getElementById('phoneMultiSelect');
+        document.addEventListener("click", (e) => {
+          if (!wrapper.contains(e.target)) {
+            menu.classList.add("hidden");
+          }
+        });
+      }
 
-  if(!btn||!menu||!wrapper) return;
+      /* ── Renderers ─────────────────────────────────────── */
 
-  btn.addEventListener('click',(e)=>{
-    e.stopPropagation();
-    menu.classList.toggle('hidden');
-  });
+      async function manualSync() {
+        toast("Syncing with WhatsApp...", "info");
+        try {
+          const res = await fetch(`${serverUrl}/api/sync`, { method: "POST" });
+          const data = await res.json();
+          toast(`Synced ${data.synced} communities!`, "success");
+          fetchData();
+        } catch {
+          toast("Sync failed", "danger");
+        }
+      }
 
-  document.addEventListener('click',(e)=>{
-    if(!wrapper.contains(e.target)){
-      menu.classList.add('hidden');
-    }
-  });
-}
+      function getStatus(c) {
+        if (c >= MAX) return "danger";
+        if (c >= WARN) return "warn";
+        return "safe";
+      }
 
-/* ── Renderers ─────────────────────────────────────── */
+      function getBadgeLabel(c) {
+        if (c >= MAX) return "🔴 Needs New Link";
+        if (c >= WARN) return "🟡 Warning Zone";
+        return "🟢 Safe";
+      }
 
-async function manualSync(){
-  toast('Syncing with WhatsApp...','info');
-  try{
-    const res=await fetch(`${serverUrl}/api/sync`,{method:'POST'});
-    const data=await res.json();
-    toast(`Synced ${data.synced} communities!`,'success');
-    fetchData();
-  }catch{
-    toast('Sync failed','danger');
-  }
-}
+      function renderAll(history) {
+        renderStats();
+        renderAlerts();
+        renderCards();
+        renderHistory(history);
+      }
 
-function getStatus(c){
-  if(c>=MAX) return 'danger';
-  if(c>=WARN) return 'warn';
-  return 'safe';
-}
+      function renderStats() {
+        const total = allCommunities.length,
+          danger = allCommunities.filter((c) => c.count >= MAX).length,
+          warn = allCommunities.filter(
+            (c) => c.count >= WARN && c.count < MAX,
+          ).length,
+          safe = allCommunities.filter((c) => c.count < WARN).length,
+          members = allCommunities.reduce((a, c) => a + (c.count || 0), 0);
 
-function getBadgeLabel(c){
-  if(c>=MAX) return '🔴 Needs New Link';
-  if(c>=WARN) return '🟡 Warning Zone';
-  return '🟢 Safe';
-}
+        document.getElementById("sTotal").textContent = total;
+        document.getElementById("sDanger").textContent = danger;
+        document.getElementById("sWarn").textContent = warn;
+        document.getElementById("sSafe").textContent = safe;
+        document.getElementById("sMembers").textContent =
+          members.toLocaleString("en-IN");
+      }
 
-function renderAll(history){
-  renderStats();
-  renderAlerts();
-  renderCards();
-  renderHistory(history);
-}
+      function renderAlerts() {
+        const dangers = allCommunities.filter((c) => c.count >= MAX),
+          warns = allCommunities.filter(
+            (c) => c.count >= WARN && c.count < MAX,
+          );
 
-function renderStats(){
-  const total=allCommunities.length,
-        danger=allCommunities.filter(c=>c.count>=MAX).length,
-        warn=allCommunities.filter(c=>c.count>=WARN&&c.count<MAX).length,
-        safe=allCommunities.filter(c=>c.count<WARN).length,
-        members=allCommunities.reduce((a,c)=>a+(c.count||0),0);
+        const as = document.getElementById("alertStrip"),
+          ws = document.getElementById("warnStrip");
 
-  document.getElementById('sTotal').textContent=total;
-  document.getElementById('sDanger').textContent=danger;
-  document.getElementById('sWarn').textContent=warn;
-  document.getElementById('sSafe').textContent=safe;
-  document.getElementById('sMembers').textContent=members.toLocaleString('en-IN');
-}
+        if (dangers.length > 0) {
+          as.classList.remove("hidden");
+          document.getElementById("alertItems").innerHTML = dangers
+            .map((c) => `<span>${escapeHtml(c.name)} — ${c.count}</span>`)
+            .join("");
+        } else as.classList.add("hidden");
 
-function renderAlerts(){
-  const dangers=allCommunities.filter(c=>c.count>=MAX),
-        warns=allCommunities.filter(c=>c.count>=WARN&&c.count<MAX);
+        if (warns.length > 0) {
+          ws.classList.remove("hidden");
+          document.getElementById("warnItems").innerHTML = warns
+            .map((c) => `<span>${escapeHtml(c.name)} (${c.count})</span>`)
+            .join("");
+        } else ws.classList.add("hidden");
+      }
 
-  const as=document.getElementById('alertStrip'),
-        ws=document.getElementById('warnStrip');
+      function renderCards() {
+        const grid = document.getElementById("grid"),
+          q = document.getElementById("searchInput").value.toLowerCase(),
+          sortOrder =
+            document.getElementById("sortOrder")?.value || "members_desc";
 
-  if(dangers.length>0){
-    as.classList.remove('hidden');
-    document.getElementById('alertItems').innerHTML=dangers.map(c=>`<span>${escapeHtml(c.name)} — ${c.count}</span>`).join('');
-  }else as.classList.add('hidden');
+        let list = allCommunities.filter((c) => {
+          if (q && !(c.name || "").toLowerCase().includes(q)) return false;
 
-  if(warns.length>0){
-    ws.classList.remove('hidden');
-    document.getElementById('warnItems').innerHTML=warns.map(c=>`<span>${escapeHtml(c.name)} (${c.count})</span>`).join('');
-  }else ws.classList.add('hidden');
-}
+          // Multi-phone filter
+          if (
+            selectedPhoneIds.length > 0 &&
+            !selectedPhoneIds.includes(c.phoneId)
+          )
+            return false;
 
-function renderCards(){
-  const grid=document.getElementById('grid'),
-        q=document.getElementById('searchInput').value.toLowerCase(),
-        sortOrder=document.getElementById('sortOrder')?.value||'members_desc';
+          const s = getStatus(c.count);
+          if (activeFilter === "danger") return s === "danger";
+          if (activeFilter === "warn") return s === "warn";
+          if (activeFilter === "safe") return s === "safe";
+          return true;
+        });
 
-  let list=allCommunities.filter(c=>{
-    if(q && !(c.name||'').toLowerCase().includes(q)) return false;
+        // Sort
+        list.sort((a, b) => {
+          switch (sortOrder) {
+            case "members_desc":
+              return b.count - a.count;
+            case "members_asc":
+              return a.count - b.count;
+            case "name_asc":
+              return (a.name || "").localeCompare(b.name || "");
+            case "name_desc":
+              return (b.name || "").localeCompare(a.name || "");
+            case "fill_desc":
+              return b.count / MAX - a.count / MAX;
+            case "fill_asc":
+              return a.count / MAX - b.count / MAX;
+            case "updated_desc":
+              return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+            case "slots_asc":
+              return MAX - a.count - (MAX - b.count);
+            default:
+              return b.count - a.count;
+          }
+        });
 
-    // Multi-phone filter
-    if(selectedPhoneIds.length>0 && !selectedPhoneIds.includes(c.phoneId)) return false;
+        const countEl = document.getElementById("phoneCount");
+        if (countEl) countEl.textContent = `${list.length} communities`;
 
-    const s=getStatus(c.count);
-    if(activeFilter==='danger') return s==='danger';
-    if(activeFilter==='warn') return s==='warn';
-    if(activeFilter==='safe') return s==='safe';
-    return true;
-  });
+        if (!list.length) {
+          grid.innerHTML = `<div class="empty"><div class="empty-icon">🌿</div><h3>No communities found</h3><p>Try changing filters or sync again</p></div>`;
+          return;
+        }
 
-  // Sort
-  list.sort((a,b)=>{
-    switch(sortOrder){
-      case 'members_desc': return b.count-a.count;
-      case 'members_asc': return a.count-b.count;
-      case 'name_asc': return (a.name||'').localeCompare(b.name||'');
-      case 'name_desc': return (b.name||'').localeCompare(a.name||'');
-      case 'fill_desc': return (b.count/MAX)-(a.count/MAX);
-      case 'fill_asc': return (a.count/MAX)-(b.count/MAX);
-      case 'updated_desc': return new Date(b.updatedAt||0)-new Date(a.updatedAt||0);
-      case 'slots_asc': return (MAX-a.count)-(MAX-b.count);
-      default: return b.count-a.count;
-    }
-  });
+        grid.innerHTML = list
+          .map((c, i) => {
+            const status = getStatus(c.count),
+              pct = Math.min((c.count / MAX) * 100, 100).toFixed(1),
+              slots = MAX - c.count,
+              updated = c.updatedAt
+                ? new Date(c.updatedAt).toLocaleString("en-IN")
+                : "Unknown";
 
-  const countEl=document.getElementById('phoneCount');
-  if(countEl) countEl.textContent=`${list.length} communities`;
+            const displayPhoneName = c.phoneName || c.phoneId || "";
+            const phoneLabel = displayPhoneName
+              ? `📱 ${displayPhoneName}${c.phoneNumber ? " (+" + c.phoneNumber + ")" : ""}`
+              : "";
 
-  if(!list.length){
-    grid.innerHTML=`<div class="empty"><div class="empty-icon">🌿</div><h3>No communities found</h3><p>Try changing filters or sync again</p></div>`;
-    return;
-  }
-
-  grid.innerHTML=list.map((c,i)=>{
-    const status=getStatus(c.count),
-          pct=Math.min((c.count/MAX)*100,100).toFixed(1),
-          slots=MAX-c.count,
-          updated=c.updatedAt?new Date(c.updatedAt).toLocaleString('en-IN'):'Unknown';
-
-    const displayPhoneName=c.phoneName || c.phoneId || '';
-    const phoneLabel=displayPhoneName
-      ? `📱 ${displayPhoneName}${c.phoneNumber?' (+'+c.phoneNumber+')':''}`
-      : '';
-
-    return`<div class="card c-${status}" style="animation-delay:${i*0.04}s;cursor:pointer;" onclick="window.location.href='members.html?id='+encodeURIComponent('${c.id}')">
+            return `<div class="card c-${status}" style="animation-delay:${i * 0.04}s;cursor:pointer;" onclick="window.location.href='members.html?id='+encodeURIComponent('${c.id}')">
       <div class="card-head">
         <div>
-          <div class="card-name">${escapeHtml(c.name||'Unnamed')}</div>
-          ${phoneLabel?`<div style="font-size:11px;color:var(--muted);margin-top:3px;">${escapeHtml(phoneLabel)}</div>`:''}
+          <div class="card-name">${escapeHtml(c.name || "Unnamed")}</div>
+          ${phoneLabel ? `<div style="font-size:11px;color:var(--muted);margin-top:3px;">${escapeHtml(phoneLabel)}</div>` : ""}
         </div>
         <span class="badge badge-${status}">${getBadgeLabel(c.count)}</span>
       </div>
@@ -630,13 +1511,13 @@ function renderCards(){
       <div class="prog-wrap">
         <div class="prog-labels">
           <span>Members</span>
-          <strong>${(c.count||0).toLocaleString()} / ${MAX}</strong>
+          <strong>${(c.count || 0).toLocaleString()} / ${MAX}</strong>
         </div>
         <div class="prog-track"><div class="prog-fill fill-${status}" style="width:${pct}%"></div></div>
       </div>
 
       <div class="card-chips">
-        <span class="chip">Slots: <strong>${slots>0?slots.toLocaleString():'⛔ FULL'}</strong></span>
+        <span class="chip">Slots: <strong>${slots > 0 ? slots.toLocaleString() : "⛔ FULL"}</strong></span>
         <span class="chip">Fill: <strong>${pct}%</strong></span>
       </div>
 
@@ -644,75 +1525,85 @@ function renderCards(){
         <div class="card-time">Updated: ${updated}</div>
       </div>
     </div>`;
-  }).join('');
-}
+          })
+          .join("");
+      }
 
-function renderHistory(history){
-  const tbody=document.getElementById('historyBody'),
-        empty=document.getElementById('historyEmpty');
+      function renderHistory(history) {
+        const tbody = document.getElementById("historyBody"),
+          empty = document.getElementById("historyEmpty");
 
-  if(!history.length){
-    tbody.innerHTML='';
-    empty.style.display='block';
-    return;
-  }
+        if (!history.length) {
+          tbody.innerHTML = "";
+          empty.style.display = "block";
+          return;
+        }
 
-  empty.style.display='none';
+        empty.style.display = "none";
 
-  tbody.innerHTML=history.slice(0,50).map(h=>{
-    const s=getStatus(h.count);
-    const ch=h.change>0
-      ? `<span style="color:var(--safe)">+${h.change}</span>`
-      : h.change<0
-        ? `<span style="color:var(--danger)">${h.change}</span>`
-        : '—';
+        tbody.innerHTML = history
+          .slice(0, 50)
+          .map((h) => {
+            const s = getStatus(h.count);
+            const ch =
+              h.change > 0
+                ? `<span style="color:var(--safe)">+${h.change}</span>`
+                : h.change < 0
+                  ? `<span style="color:var(--danger)">${h.change}</span>`
+                  : "—";
 
-    return`<tr>
-      <td><strong>${escapeHtml(h.groupName||'Unnamed')}</strong></td>
-      <td>${(h.count||0).toLocaleString()}</td>
+            return `<tr>
+      <td><strong>${escapeHtml(h.groupName || "Unnamed")}</strong></td>
+      <td>${(h.count || 0).toLocaleString()}</td>
       <td>${ch}</td>
       <td><span class="badge badge-${s}" style="font-size:11px">${getBadgeLabel(h.count)}</span></td>
-      <td>${h.date ? new Date(h.date).toLocaleString('en-IN') : '—'}</td>
+      <td>${h.date ? new Date(h.date).toLocaleString("en-IN") : "—"}</td>
     </tr>`;
-  }).join('');
-}
+          })
+          .join("");
+      }
 
-function setFilter(f,btn){
-  activeFilter=f;
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderCards();
-}
+      function setFilter(f, btn) {
+        activeFilter = f;
+        document
+          .querySelectorAll(".filter-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderCards();
+      }
 
-function downloadExcel(){
-  toast('Generating Excel...','info');
-  window.location.href=`${serverUrl}/api/export-excel`;
-}
+      function downloadExcel() {
+        toast("Generating Excel...", "info");
+        window.location.href = `${serverUrl}/api/export-excel`;
+      }
 
-function toast(msg,type='info'){
-  const icons={danger:'🚨',warn:'⚠️',success:'✅',info:'ℹ️'};
-  const el=document.createElement('div');
-  el.className=`toast toast-${type}`;
-  el.innerHTML=`<span>${icons[type]}</span><span>${msg}</span>`;
-  document.getElementById('toasts').appendChild(el);
-  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity 0.3s';},4000);
-  setTimeout(()=>el.remove(),4400);
-}
+      function toast(msg, type = "info") {
+        const icons = { danger: "🚨", warn: "⚠️", success: "✅", info: "ℹ️" };
+        const el = document.createElement("div");
+        el.className = `toast toast-${type}`;
+        el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+        document.getElementById("toasts").appendChild(el);
+        setTimeout(() => {
+          el.style.opacity = "0";
+          el.style.transition = "opacity 0.3s";
+        }, 4000);
+        setTimeout(() => el.remove(), 4400);
+      }
 
-function escapeHtml(str=''){
-  return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#39;');
-}
+      function escapeHtml(str = "") {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
 
-/* Init */
-setupPhoneDropdown();
-setInterval(fetchData,30000);
-fetchData();
-loadAlertNumbers();
-</script>
-</body>
+      /* Init */
+      setupPhoneDropdown();
+      setInterval(fetchData, 30000);
+      fetchData();
+      loadAlertNumbers();
+    </script>
+  </body>
 </html>
